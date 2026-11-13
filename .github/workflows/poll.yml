@@ -1,0 +1,26 @@
+name: Poll Ayao
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python poll.py
+      - name: Commit snapshot
+        run: |
+          git config user.name "ayao-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add snap.json config.json
+          git diff --cached --quiet && echo "no change" && exit 0
+          git commit -m "snapshot $(date -u +%FT%TZ)"
+          git push
