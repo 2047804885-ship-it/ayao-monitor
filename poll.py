@@ -93,20 +93,7 @@ def diffPositions(oldL, newL):
     return evs
 
 
-def diffStats(oldS, newS):
-    evs = []
-    if not oldS:
-        return evs
-    now = datetime.now(CST).strftime('%m-%d %H:%M:%S')
-
-    def chk(f, label, th):
-        a, b = oldS.get(f), newS.get(f)
-        if isinstance(a, (int, float)) and isinstance(b, (int, float)) and abs(b - a) >= th:
-            evs.append({'time': now, 'type': label, 'symbol': '', 'side': '', 'qty': round(b - a, 4)})
-    chk('pnl', '盈亏变动', 100)
-    chk('marginBalance', '保证金变动', 100)
-    chk('roi', '收益率变动', 0.05)
-    return evs
+STAT_NOISE = ('盈亏变动', '收益率变动', '保证金变动')  # filtered out per user request
 
 
 def main():
@@ -165,7 +152,7 @@ def main():
     if q:
         newprof.update({k: v for k, v in q.items() if k != 'chartItems' and v is not None})
 
-    evs = diffPositions(snap.get('positions') or [], pos) + diffStats(snap.get('profile'), newprof)
+    evs = diffPositions(snap.get('positions') or [], pos)
     # also diff lastTradeTime: if it advanced, note a "有新交易" hint
     old_lt = (snap.get('profile') or {}).get('lastTradeTime')
     new_lt = newprof.get('lastTradeTime')
@@ -178,7 +165,8 @@ def main():
         'profile': newprof,
         'curve': chart,
         'positions': pos,
-        'events': evs + (snap.get('events') or []),
+        'events': [e for e in (snap.get('events') or []) if e.get('type') not in STAT_NOISE]
+                  + evs,
         'lastError': ' | '.join(errs)[:200],
         'lastOk': '' if errs else datetime.now(CST).strftime('%Y-%m-%d %H:%M:%S'),
         'serverTime': datetime.now(CST).strftime('%Y-%m-%d %H:%M:%S'),
