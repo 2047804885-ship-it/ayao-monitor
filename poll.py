@@ -95,6 +95,49 @@ def diffPositions(oldL, newL):
 
 STAT_NOISE = ('盈亏变动', '收益率变动', '保证金变动')  # filtered out per user request
 
+WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
+ICON = {'开仓': '🟢', '平仓': '🔴', '加仓': '🔵', '减仓': '🟠', '最新交易': '⏱'}
+
+
+def fmt_event(e):
+    icon = ICON.get(e['type'], '📣')
+    t = e.get('type', '')
+    if t == '最新交易':
+        return f"{icon} <b>[{t}]</b> {e.get('time','')} 熬鹰有新的成交记录，详情见监控页"
+    return (f"{icon} <b>[{t}]</b> {e.get('symbol','')} {e.get('side','')}"
+            + (f" {e.get('lever','')}x" if e.get('lever') else '')
+            + (f" 数量:{e.get('qty')}" if e.get('qty') not in (None, '', 0) else '')
+            + (f" 价格:{e.get('price')}" if e.get('price') else '')
+            + f"　({e.get('time','')})")
+
+
+def wxpush(evs, name='熬鹰资本'):
+    """Push new trade events to WeChat via WxPusher service account."""
+    token = os.environ.get('WXPUSHER_TOKEN', '').strip()
+    uid = os.environ.get('WXPUSHER_UID', '').strip()
+    if not token or not uid:
+        return 'wxpush skipped (no WXPUSHER_TOKEN/WXPUSHER_UID)'
+    body = ''.join(fmt_event(e) for e in evs[:10])
+    payload = {
+        'appToken': token,
+        'content': f"<h3>📣 {name} 交易动态</h3>{body}<p style='color:#888'>共 {len(evs)} 条新事件 · 5 分钟内检测到</p>",
+        'summary': f"{name} 新交易动态 {len(evs)} 条: " + ' / '.join(
+            e.get('type', '') + ' ' + e.get('symbol', '') for e in evs[:3])[:95],
+        'contentType': 3,  # html
+        'uids': [uid],
+        'url': 'https://ayao-monitor.jikui-ayao.workers.dev',
+    }
+    req = urllib.request.Request(WXPUSH_API, data=json.dumps(payload).encode(),
+                                 headers={'Content-Type': 'application/json'})
+    try:
+        resp = json.loads(urllib.request.urlopen(req, timeout=15, context=CTX).read().decode())
+        ok = resp.get('code') == 1000
+        print('wxpush:', resp.get('code'), resp.get('msg'))
+        return 'ok' if ok else 'fail:' + str(resp.get('msg'))
+    except Exception as e:
+        print('wxpush error:', e)
+        return 'err:' + str(e)[:80]
+
 
 def main():
     cfg = {}
@@ -180,7 +223,15 @@ def main():
         json.dump(cfg, f, ensure_ascii=False, indent=1)
     print('poll done. errors:', newsnap['lastError'] or 'none')
     print('events added:', len(evs))
+    if evs:  # only trade events are in evs now -> push each new event to WeChat
+        print('wxpush result:', wxpush(evs, name))
 
 
 if __name__ == '__main__':
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == '--test-push':
+        r = wxpush([{'time': datetime.now(CST).strftime('%m-%d %H:%M'), 'type': '最新交易',
+                     'symbol': 'TEST', 'side': 'LONG', 'lever': '20', 'qty': '0.5'}], '推送测试')
+        print('test push:', r)
+        sys.exit(0)
     main()
