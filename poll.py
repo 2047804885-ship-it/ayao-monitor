@@ -23,10 +23,11 @@ CTX.check_hostname = False
 CTX.verify_mode = ssl.CERT_NONE
 
 
-def getJSON(url, body=None):
+def getJSON(url, body=None, timeout=None):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, headers=UA)
-    raw = urllib.request.urlopen(req, timeout=20, context=CTX).read().decode('utf-8', 'ignore')
+    t = timeout or int(os.environ.get('AYAO_TIMEOUT', '20'))
+    raw = urllib.request.urlopen(req, timeout=t, context=CTX).read().decode('utf-8', 'ignore')
     return json.loads(raw)
 
 
