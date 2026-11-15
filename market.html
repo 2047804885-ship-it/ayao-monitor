@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0B0E11">
+<title>市场雷达 · 加密货币合约全景</title>
+<style>
+:root{
+  --bg:#0B0E11;--panel:#151A21;--panel2:#1B222C;--line:#252D3A;
+  --ink:#E8EDF4;--sub:#8B96A5;--dim:#5C6675;
+  --up:#F6465D;--down:#0ECB81;--warn:#F0B90B;--info:#3B82F6;--purple:#A855F7;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55;padding-bottom:30px;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:980px;margin:0 auto;padding:0 12px;}
+
+/* 顶栏 */
+.top{position:sticky;top:0;z-index:50;background:rgba(11,14,17,.96);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:10px 0;}
+.topin{max-width:980px;margin:0 auto;padding:0 12px;display:flex;align-items:center;gap:10px;}
+.logo{font-size:16px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
+.logo b{color:var(--warn);}
+.nav{margin-left:auto;display:flex;gap:6px;}
+.nav a{font-size:12px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;color:var(--sub);}
+.nav a.on{background:var(--warn);color:#0B0E11;border-color:var(--warn);font-weight:700;}
+
+/* 市场概览条 */
+.mkt{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+@media(max-width:600px){.mkt{grid-template-columns:repeat(2,1fr);}}
+.mkt .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px;}
+.mkt .k{font-size:11px;color:var(--sub);}
+.mkt .v{font-size:16px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;}
+
+/* 工具栏 */
+.tools{display:flex;gap:8px;align-items:center;margin:10px 0 8px;flex-wrap:wrap;}
+.search{flex:1;min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+  padding:9px 12px;color:var(--ink);font-size:13px;outline:none;}
+.search:focus{border-color:var(--warn);}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:9px 14px;font-size:13px;cursor:pointer;white-space:nowrap;}
+.btn:active{transform:scale(.97);}
+.btn.pri{background:var(--warn);color:#0B0E11;border-color:var(--warn);font-weight:700;}
+
+/* 筛选标签 */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{font-size:12px;padding:6px 12px;border-radius:20px;background:var(--panel);border:1px solid var(--line);
+  color:var(--sub);white-space:nowrap;cursor:pointer;}
+.tab.on{background:var(--warn);color:#0B0E11;border-color:var(--warn);font-weight:700;}
+
+/* 榜单 */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.row{display:grid;grid-template-columns:1.35fr .95fr .85fr .95fr 1fr .8fr;
+  gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center;
+  font-variant-numeric:tabular-nums;}
+.row:last-child{border-bottom:none;}
+.row:active{background:var(--panel2);}
+.row.head{background:var(--panel2);color:var(--sub);font-size:11px;cursor:default;position:sticky;top:53px;z-index:20;}
+.row .sym{font-weight:700;font-size:13px;}
+.row .sym i{font-style:normal;font-size:10px;color:var(--dim);display:block;font-weight:400;}
+.num{text-align:right;}
+.up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--sub);}
+@media(max-width:700px){
+  .row{grid-template-columns:1.3fr .9fr .85fr .9fr;font-size:12px;padding:9px 10px;}
+  .row .h4,.row .h5{display:none;}
+  .row.head .h4,.row.head .h5{display:none;}
+}
+@media(max-width:430px){
+  .row{grid-template-columns:1.4fr .9fr .85fr;}
+  .row .h3,.row.head .h3{display:none;}
+}
+
+/* 徽标 */
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;line-height:1.5;}
+.t-hot{background:rgba(246,70,93,.18);color:#FF7A8A;}
+.t-cool{background:rgba(14,203,129,.18);color:#3DDC97;}
+.t-warn{background:rgba(240,185,11,.18);color:var(--warn);}
+.t-info{background:rgba(59,130,246,.18);color:#6BA6FF;}
+.t-pur{background:rgba(168,85,247,.18);color:#C084FC;}
+.t-dim{background:rgba(139,150,165,.15);color:var(--sub);}
+
+/* 详情面板 */
+.sheet{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);}
+.sheet.open{transform:translateY(0);}
+.sheetbar{position:sticky;top:0;z-index:10;background:rgba(11,14,17,.97);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:11px 14px;display:flex;align-items:center;gap:10px;}
+.back{font-size:20px;line-height:1;padding:2px 8px 4px 0;cursor:pointer;color:var(--sub);}
+.sheetbar .ttl{font-size:15px;font-weight:800;}
+.sheetbar .ttl small{display:block;font-size:11px;color:var(--sub);font-weight:400;}
+.px{margin-left:auto;text-align:right;}
+.px .p{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;}
+.px .c{font-size:12px;}
+
+.sec{margin:14px 0;}
+.h2{font-size:13px;font-weight:800;color:var(--warn);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.h2:before{content:'';width:3px;height:13px;background:var(--warn);border-radius:2px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px;}
+
+/* 评分环 */
+.scorebox{display:flex;gap:14px;align-items:center;}
+.ring{width:92px;height:92px;flex:0 0 92px;position:relative;}
+.ring svg{transform:rotate(-90deg);}
+.ring .txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring .txt b{font-size:21px;line-height:1;}
+.ring .txt span{font-size:10px;color:var(--sub);}
+.scoretxt{flex:1;font-size:12.5px;color:#C3CCD9;line-height:1.65;}
+.scoretxt b{color:var(--ink);}
+
+/* 数据网格 */
+.dg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+@media(max-width:520px){.dg{grid-template-columns:repeat(2,1fr);}}
+.dg .i{background:var(--panel2);border-radius:8px;padding:8px 10px;}
+.dg .k{font-size:10.5px;color:var(--sub);}
+.dg .v{font-size:14px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;}
+
+/* 点位表 */
+.plan{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;}
+.plan th{background:var(--panel2);color:var(--sub);font-size:11px;font-weight:600;padding:7px 8px;text-align:left;}
+.plan td{padding:8px;border-bottom:1px solid var(--line);}
+.plan tr:last-child td{border-bottom:none;}
+.plan .lbl{color:var(--sub);}
+
+/* 进度条 */
+.bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:5px;}
+.bar i{display:block;height:100%;border-radius:3px;transition:width .4s;}
+
+/* 分析正文 */
+.ana{font-size:13px;line-height:1.75;color:#CBD4E0;}
+.ana p{margin-bottom:9px;}
+.ana p:last-child{margin-bottom:0;}
+.ana .hl{color:var(--warn);font-weight:700;}
+.ana .rd{color:var(--up);font-weight:700;}
+.ana .gn{color:var(--down);font-weight:700;}
+.ana ul{margin:6px 0 9px 16px;}
+.ana li{margin-bottom:5px;}
+
+/* 手法卡 */
+.hand{background:linear-gradient(135deg,rgba(168,85,247,.10),rgba(59,130,246,.06));
+  border:1px solid rgba(168,85,247,.3);border-radius:10px;padding:11px 12px;margin-bottom:9px;}
+.hand .ht{font-size:12.5px;font-weight:800;color:#C084FC;margin-bottom:4px;}
+.hand .hd{font-size:12.5px;color:#C3CCD9;line-height:1.65;}
+
+/* 图表 */
+.chart{width:100%;height:190px;display:block;border-radius:9px;background:var(--panel2);}
+
+/* 加载 */
+.loading{text-align:center;padding:40px 20px;color:var(--sub);font-size:13px;}
+.spin{width:26px;height:26px;border:2.5px solid var(--line);border-top-color:var(--warn);
+  border-radius:50%;margin:0 auto 12px;animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.err{color:var(--up);font-size:12.5px;text-align:center;padding:20px;}
+
+.foot{font-size:11px;color:var(--dim);text-align:center;padding:20px 10px;line-height:1.7;}
+.notice{background:rgba(240,185,11,.08);border:1px solid rgba(240,185,11,.25);border-radius:9px;
+  padding:9px 11px;font-size:11.5px;color:#D9C68A;line-height:1.6;margin:10px 0;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="topin">
+    <div class="logo">📡 市场<b>雷达</b></div>
+    <div class="nav">
+      <a href="index.html">熬鹰监控</a>
+      <a href="market.html" class="on">全市场</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="mkt" id="mkt">
+    <div class="c"><div class="k">合约总数</div><div class="v" id="m-count">—</div></div>
+    <div class="c"><div class="k">上涨 / 下跌</div><div class="v" id="m-ud">—</div></div>
+    <div class="c"><div class="k">24h 总成交额</div><div class="v" id="m-vol">—</div></div>
+    <div class="c"><div class="k">数据时间</div><div class="v" id="m-time" style="font-size:13px;">—</div></div>
+  </div>
+
+  <div class="tools">
+    <input class="search" id="q" placeholder="搜索币种，如 BTC / SOL / PEPE">
+    <button class="btn pri" id="scan">扫描信号</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-f="vol">成交额榜</div>
+    <div class="tab" data-f="gain">涨幅榜</div>
+    <div class="tab" data-f="lose">跌幅榜</div>
+    <div class="tab" data-f="fund">资金费率</div>
+    <div class="tab" data-f="oi">持仓异动</div>
+    <div class="tab" data-f="sig">⚡ 机会信号</div>
+  </div>
+
+  <div class="list" id="list">
+    <div class="loading"><div class="spin"></div>正在连接交易所行情…</div>
+  </div>
+
+  <div class="notice">
+    <b>数据说明</b>：行情与持仓数据来自 Gate.io USDT 永续合约公共接口（CORS 开放，手机直连）。全市场 <span id="n-ct">1000+</span> 个合约实时同步；
+    点击任一币种可查看 K 线、多空点位、庄家行为识别与量化分析报告。
+  </div>
+
+  <div class="foot">
+    分析结论由内置多因子量化模型自动生成，基于持仓量、大户持仓比、主动成交、爆仓结构、资金费率等公开数据计算，<br>
+    不是预测，也不构成投资建议。合约交易风险极高，请自行控制仓位与止损。
+  </div>
+</div>
+
+<!-- 详情面板 -->
+<div class="sheet" id="sheet">
+  <div class="sheetbar">
+    <div class="back" onclick="closeSheet()">←</div>
+    <div class="ttl" id="s-title">—<small id="s-sub"></small></div>
+    <div class="px"><div class="p" id="s-px">—</div><div class="c" id="s-chg">—</div></div>
+  </div>
+  <div class="wrap" id="s-body">
+    <div class="loading"><div class="spin"></div>加载深度数据…</div>
+  </div>
+</div>
+
+<script>
+/* ================= 基础 ================= */
+const API = 'https://api.gateio.ws/api/v4/futures/usdt';
+const $ = id => document.getElementById(id);
+const nf = (v,d=2) => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const nfi = v => (v==null||isNaN(v)) ? '—' : Math.round(v).toLocaleString('en-US');
+const sgn = v => (v>0?'+':'') + (v==null||isNaN(v)?'—':v.toFixed(2));
+const cls = v => v>0?'up':(v<0?'down':'flat');
+function bigNum(v){
+  if(v==null||isNaN(v)) return '—';
+  const a=Math.abs(v);
+  if(a>=1e8) return (v/1e8).toFixed(2)+'亿';
+  if(a>=1e4) return (v/1e4).toFixed(2)+'万';
+  return v.toFixed(0);
+}
+function pxFmt(v){
+  if(v==null||isNaN(v)) return '—';
+  const a=Math.abs(v);
+  if(a>=1000) return v.toLocaleString('en-US',{maximumFractionDigits:1});
+  if(a>=1) return v.toFixed(3);
+  if(a>=0.01) return v.toFixed(5);
+  return v.toPrecision(4);
+}
+async function J(url, tmo=12000){
+  const ctl = new AbortController();
+  const t = setTimeout(()=>ctl.abort(), tmo);
+  try{
+    const r = await fetch(url, {signal:ctl.signal, cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+const store = {
+  get(k,ttl){ try{ const o=JSON.parse(sessionStorage.getItem(k)||'null');
+    if(o && Date.now()-o.t<ttl) return o.v; }catch(e){} return null; },
+  set(k,v){ try{ sessionStorage.setItem(k, JSON.stringify({t:Date.now(),v})); }catch(e){} }
+};
+
+/* ================= 技术指标 ================= */
+function ema(arr,n){
+  if(!arr.length) return [];
+  const k=2/(n+1); let prev=arr[0]; const out=[prev];
+  for(let i=1;i<arr.length;i++){ prev = arr[i]*k + prev*(1-k); out.push(prev); }
+  return out;
+}
+function sma(arr,n){
+  const out=[]; let s=0;
+  for(let i=0;i<arr.length;i++){ s+=arr[i]; if(i>=n) s-=arr[i-n]; out.push(i>=n-1?s/n:null); }
+  return out;
+}
+function atr(cs,n=14){
+  if(cs.length<2) return 0;
+  const trs=[];
+  for(let i=1;i<cs.length;i++){
+    const h=+cs[i].h, l=+cs[i].l, pc=+cs[i-1].c;
+    trs.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
+  }
+  const a=ema(trs,n);
+  return a[a.length-1]||0;
+}
+function rsi(cs,n=14){
+  if(cs.length<n+1) return 50;
+  let g=0,l=0;
+  for(let i=cs.length-n;i<cs.length;i++){
+    const d=+cs[i].c-+cs[i-1].c;
+    if(d>0) g+=d; else l-=d;
+  }
+  const ag=g/n, al=l/n;
+  if(al===0) return 100;
+  const rs=ag/al;
+  return 100-100/(1+rs);
+}
+function boll(cs,n=20,k=2){
+  const cl=cs.map(c=>+c.c);
+  const m=sma(cl,n);
+  const out=[];
+  for(let i=0;i<cl.length;i++){
+    if(m[i]==null){out.push(null);continue;}
+    let s=0;
+    for(let j=i-n+1;j<=i;j++) s+=Math.pow(cl[j]-m[i],2);
+    const sd=Math.sqrt(s/n);
+    out.push({mid:m[i], up:m[i]+k*sd, dn:m[i]-k*sd});
+  }
+  return out;
+}
+/* 摆动高低点（左右各 lb 根确认） */
+function swings(cs, lb=2){
+  const hi=[], lo=[];
+  for(let i=lb;i<cs.length-lb;i++){
+    let isH=true,isL=true;
+    for(let j=1;j<=lb;j++){
+      if(+cs[i].h <= +cs[i-j].h || +cs[i].h <= +cs[i+j].h) isH=false;
+      if(+cs[i].l >= +cs[i-j].l || +cs[i].l >= +cs[i+j].l) isL=false;
+    }
+    if(isH) hi.push(+cs[i].h);
+    if(isL) lo.push(+cs[i].l);
+  }
+  return {hi,lo};
+}
+/* 价位聚类 */
+function cluster(levels, tol=0.008){
+  if(!levels.length) return [];
+  const s=[...levels].sort((a,b)=>a-b);
+  const out=[]; let grp=[s[0]];
+  for(let i=1;i<s.length;i++){
+    if(Math.abs(s[i]-grp[grp.length-1])/grp[grp.length-1] <= tol) grp.push(s[i]);
+    else { out.push(grp.reduce((a,b)=>a+b,0)/grp.length); grp=[s[i]]; }
+  }
+  out.push(grp.reduce((a,b)=>a+b,0)/grp.length);
+  return out;
+}
+
+/* ================= 全市场列表 ================= */
+let ALL=[], FILTER='vol', SCAN=null, SCANMAP={};
+
+function chgCls(v){ return v>0?'up':(v<0?'down':'flat'); }
+
+async function loadMarket(force){
+  let t = force ? null : store.get('gtk', 45000);
+  if(!t){ t = await J(API+'/tickers', 20000); store.set('gtk', t); }
+  ALL = t.map(x=>{
+    const last=+x.last||+x.mark_price||0;
+    return {
+      c:x.contract, sym:x.contract.replace('_USDT',''),
+      last, chg:+x.change_percentage||0,
+      vol:+x.volume_24h_quote||+x.volume_24h_settle||0,
+      high:+x.high_24h||0, low:+x.low_24h||0,
+      fund:+x.funding_rate||0, mark:+x.mark_price||last,
+      oi:+x.total_size||0
+    };
+  }).filter(x=>x.last>0);
+
+  const up=ALL.filter(x=>x.chg>0).length, dn=ALL.filter(x=>x.chg<0).length;
+  const tv=ALL.reduce((a,b)=>a+b.vol,0);
+  $('m-count').textContent = ALL.length;
+  $('m-ud').innerHTML = '<span class="up">'+up+'</span> / <span class="down">'+dn+'</span>';
+  $('m-vol').textContent = '$'+bigNum(tv);
+  $('m-time').textContent = new Date().toLocaleTimeString('zh-CN',{hour12:false});
+  $('n-ct').textContent = ALL.length;
+  render();
+}
+
+function render(){
+  const q = ($('q').value||'').trim().toUpperCase();
+  let arr = ALL.slice();
+
+  if(q) arr = arr.filter(x=>x.sym.includes(q));
+
+  if(FILTER==='vol') arr.sort((a,b)=>b.vol-a.vol);
+  else if(FILTER==='gain') arr.sort((a,b)=>b.chg-a.chg);
+  else if(FILTER==='lose') arr.sort((a,b)=>a.chg-b.chg);
+  else if(FILTER==='fund') arr.sort((a,b)=>Math.abs(b.fund)-Math.abs(a.fund));
+  else if(FILTER==='oi') arr.sort((a,b)=>b.oi-a.oi);
+  else if(FILTER==='sig'){
+    arr = (SCAN||[]).map(s=>ALL.find(x=>x.c===s.c)).filter(Boolean);
+    arr.sort((a,b)=>(SCANMAP[b.c]?.score||0)-(SCANMAP[a.c]?.score||0));
+  }
+
+  const lim = FILTER==='sig' ? arr.length : (q ? 60 : 80);
+  arr = arr.slice(0, lim);
+
+  if(!arr.length){
+    $('list').innerHTML = '<div class="loading">没有匹配的合约</div>';
+    return;
+  }
+
+  const head = '<div class="row head">'+
+    '<div>币种</div><div class="num">最新价</div><div class="num">24h涨跌</div>'+
+    '<div class="num h3">成交额</div><div class="num h4">资金费率</div><div class="num h5">信号</div></div>';
+
+  const rows = arr.map(x=>{
+    const s = SCANMAP[x.c];
+    let tagHtml = '';
+    if(s) tagHtml = '<span class="tag '+(s.score>0?'t-hot':'t-cool')+'">'+(s.score>0?'多':'空')+Math.abs(s.score)+'</span>';
+    return '<div class="row" onclick="openCoin(\''+x.c+'\')">'+
+      '<div class="sym">'+x.sym+'<i>'+x.c+'</i></div>'+
+      '<div class="num">'+pxFmt(x.last)+'</div>'+
+      '<div class="num '+chgCls(x.chg)+'">'+sgn(x.chg)+'%</div>'+
+      '<div class="num h3">$'+bigNum(x.vol)+'</div>'+
+      '<div class="num h4 '+(Math.abs(x.fund)>0.0005?(x.fund>0?'up':'down'):'flat')+'">'+(x.fund*100).toFixed(4)+'%</div>'+
+      '<div class="num h5">'+(tagHtml||'<span style="color:var(--dim)">—</span>')+'</div>'+
+    '</div>';
+  }).join('');
+
+  $('list').innerHTML = head + rows;
+}
+
+/* ================= 扫描信号 ================= */
+async function scanSignals(){
+  const btn=$('scan');
+  btn.disabled=true; btn.textContent='扫描中…';
+  const pool = ALL.slice().sort((a,b)=>b.vol-a.vol).slice(0,45);
+  const out=[]; SCANMAP={};
+  const CONC=4;
+  for(let i=0;i<pool.length;i+=CONC){
+    const batch=pool.slice(i,i+CONC);
+    const res = await Promise.all(batch.map(async x=>{
+      try{
+        const st = await J(API+'/contract_stats?contract='+x.c+'&interval=1h&limit=30', 10000);
+        if(!Array.isArray(st)||st.length<6) return null;
+        const a = analyzeCrowd(st);
+        return {c:x.c, sym:x.sym, score:a.score, state:a.state, tag:a.tag, note:a.note};
+      }catch(e){ return null; }
+    }));
+    res.filter(Boolean).forEach(r=>{ out.push(r); SCANMAP[r.c]=r; });
+    await new Promise(r=>setTimeout(r,160));
+  }
+  out.sort((a,b)=>Math.abs(b.score)-Math.abs(a.score));
+  SCAN = out.filter(o=>Math.abs(o.score)>=30).slice(0,25);
+  btn.disabled=false; btn.textContent='重新扫描';
+  FILTER='sig';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.f==='sig'));
+  if(!SCAN.length){
+    $('list').innerHTML='<div class="loading">当前没有明显机会信号，市场处于均衡状态。<br>可稍后重试或点击其他榜单浏览。</div>';
+    return;
+  }
+  render();
+}
+
+/* ================= 人群/持仓结构分析 ================= */
+function analyzeCrowd(st){
+  const n = st.length;
+  const cur = st[n-1], prev24 = st[Math.max(0,n-25)];
+  const oiNow = +cur.open_interest_usd||0, oiPrev = +prev24.open_interest_usd||0;
+  const oiChg = oiPrev>0 ? (oiNow-oiPrev)/oiPrev*100 : 0;
+  const pNow = +cur.mark_price||0, pPrev = +prev24.mark_price||0;
+  const pChg = pPrev>0 ? (pNow-pPrev)/pPrev*100 : 0;
+
+  const topAcc = +cur.top_lsr_account||0;   // 大户账户多空比
+  const topSize = +cur.top_lsr_size||0;     // 大户持仓量多空比
+  const allAcc = +cur.lsr_account||0;       // 全市场账户多空比
+  const taker = +cur.lsr_taker||0;          // 主动买卖比
+
+  let liqL=0, liqS=0;
+  st.slice(-24).forEach(x=>{ liqL += +x.long_liq_usd||0; liqS += +x.short_liq_usd||0; });
+  const liqTot = liqL+liqS;
+
+  let score = 0, notes=[];
+  // 1) OI 与价格组合
+  if(oiChg>3 && pChg>1){ score += 22; notes.push('持仓增'+oiChg.toFixed(1)+'%且价格上涨，多头资金主动进场'); }
+  else if(oiChg>3 && pChg<-1){ score -= 22; notes.push('持仓增'+oiChg.toFixed(1)+'%但价格下跌，空头在加仓压制'); }
+  else if(oiChg<-3 && pChg>1){ score -= 8; notes.push('持仓减少但价格反弹，多为空头回补而非真实买盘'); }
+  else if(oiChg<-3 && pChg<-1){ score += 8; notes.push('持仓与价格同降，多头止损离场，下跌动能衰竭'); }
+
+  // 2) 大户与散户背离
+  if(topAcc>0 && allAcc>0){
+    const gap = topAcc/allAcc;
+    if(gap>1.5){ score += 18; notes.push('大户做多账户占比显著高于散户（'+(topAcc/allAcc).toFixed(2)+'倍），筹码向多头集中'); }
+    else if(gap<0.67){ score -= 18; notes.push('大户做多占比明显低于散户（'+(topAcc/allAcc).toFixed(2)+'倍），散户接盘风险'); }
+  }
+  // 3) 大户持仓量方向
+  if(topSize>1.3){ score += 12; notes.push('大户持仓量多空比'+topSize.toFixed(2)+'，主力仓位偏多'); }
+  else if(topSize<0.77){ score -= 12; notes.push('大户持仓量多空比'+topSize.toFixed(2)+'，主力仓位偏空'); }
+
+  // 4) 主动成交
+  if(taker>1.15){ score += 10; notes.push('主动买盘占优（'+taker.toFixed(2)+'）'); }
+  else if(taker<0.87){ score -= 10; notes.push('主动卖盘占优（'+taker.toFixed(2)+'）'); }
+
+  // 5) 爆仓结构
+  if(liqTot>0){
+    const r = liqS/liqTot;
+    if(r>0.72){ score += 12; notes.push('近24h爆仓以空头为主（'+(r*100).toFixed(0)+'%），存在挤压空头动能'); }
+    else if(r<0.28){ score -= 12; notes.push('近24h爆仓以多头为主（'+((1-r)*100).toFixed(0)+'%），多头已被清洗'); }
+  }
+
+  score = Math.max(-100, Math.min(100, Math.round(score)));
+
+  let state='均衡', tag='t-dim';
+  if(score>=45){ state='多头主导'; tag='t-hot'; }
+  else if(score>=20){ state='偏多'; tag='t-hot'; }
+  else if(score<=-45){ state='空头主导'; tag='t-cool'; }
+  else if(score<=-20){ state='偏空'; tag='t-cool'; }
+
+  return {score, state, tag, oiChg, pChg, topAcc, topSize, allAcc, taker,
+          liqL, liqS, liqTot, note: notes.slice(0,2).join('；'), notes};
+}
+
+/* ================= 详情 ================= */
+let CUR=null;
+function closeSheet(){
+  $('sheet').classList.remove('open'); document.body.style.overflow='';
+  if(location.hash) history.replaceState(null,'',location.pathname+location.search);
+}
+
+async function openCoin(contract, noHash){
+  if(!noHash) location.hash = contract;
+  const meta = ALL.find(x=>x.c===contract) || {c:contract, sym:contract.replace('_USDT',''), last:0, chg:0, vol:0};
+  CUR = contract;
+  $('s-title').innerHTML = meta.sym+' 永续<small>'+contract+' · Gate.io USDT 本位</small>';
+  $('s-px').textContent = pxFmt(meta.last);
+  $('s-chg').innerHTML = '<span class="'+chgCls(meta.chg)+'">'+sgn(meta.chg)+'%</span>';
+  $('s-body').innerHTML = '<div class="loading"><div class="spin"></div>拉取 K 线与持仓数据…</div>';
+  $('sheet').classList.add('open');
+  document.body.style.overflow='hidden';
+  $('sheet').scrollTop=0;
+
+  try{
+    const [c4, c1, st, cts, fh] = await Promise.all([
+      J(API+'/candlesticks?contract='+contract+'&interval=4h&limit=150'),
+      J(API+'/candlesticks?contract='+contract+'&interval=1h&limit=120'),
+      J(API+'/contract_stats?contract='+contract+'&interval=1h&limit=100'),
+      J(API+'/contracts/'+contract).catch(()=>null),
+      J(API+'/funding_rate?contract='+contract+'&limit=20').catch(()=>null)
+    ]);
+    if(CUR!==contract) return;
+    renderDetail(meta, c4, c1, st, cts, fh);
+  }catch(e){
+    if(CUR!==contract) return;
+    $('s-body').innerHTML = '<div class="err">数据加载失败：'+e.message+'<br><br>请检查网络后返回重试</div>';
+  }
+}
+
+function renderDetail(meta, c4, c1, st, cts, fh){
+  const price = +meta.last;
+  const closes = c4.map(c=>+c.c);
+  const e7=ema(closes,7), e25=ema(closes,25), e99=ema(closes,99);
+  const atrV = atr(c4,14);
+  const rsiV = rsi(c4,14);
+  const bb = boll(c4,20,2);
+  const bbl = bb[bb.length-1];
+  const sw = swings(c4.slice(-80),2);
+  const resAll = cluster(sw.hi.filter(v=>v>price), 0.006).sort((a,b)=>a-b);
+  const supAll = cluster(sw.lo.filter(v=>v<price), 0.006).sort((a,b)=>b-a);
+  const R1 = resAll[0] || price*(1+atrV/price*1.5);
+  const R2 = resAll[1] || price*(1+atrV/price*3);
+  const S1 = supAll[0] || price*(1-atrV/price*1.5);
+  const S2 = supAll[1] || price*(1-atrV/price*3);
+  const hi80 = Math.max(...c4.slice(-80).map(c=>+c.h));
+  const lo80 = Math.min(...c4.slice(-80).map(c=>+c.l));
+  const e7v=e7[e7.length-1], e25v=e25[e25.length-1], e99v=e99[e99.length-1];
+
+  const crowd = (Array.isArray(st)&&st.length>5) ? analyzeCrowd(st) : null;
+  const curSt = (Array.isArray(st)&&st.length)? st[st.length-1] : {};
+  const fundNow = +curSt.last_funding_rate || +meta.fund || 0;
+  const oiUsd = +curSt.open_interest_usd || 0;
+  const oiRatio = meta.vol>0 ? oiUsd/meta.vol : 0;   // 持仓/成交 = 杠杆堆积度
+
+  // ---- 趋势与动量打分 ----
+  let trend=0;
+  if(price>e7v) trend+=8; else trend-=8;
+  if(price>e25v) trend+=10; else trend-=10;
+  if(price>e99v) trend+=12; else trend-=12;
+  if(e7v>e25v) trend+=6; else trend-=6;
+  const trendScore = Math.max(-36, Math.min(36, trend));
+  const momoScore = Math.round((rsiV-50)/50*24);       // -24..24
+  const crowdScore = crowd ? crowd.score : 0;
+  const total = Math.max(-100, Math.min(100, Math.round(trendScore + momoScore*0.8 + crowdScore*0.9)));
+
+  // ---- 点位计划 ----
+  const useLong = total>=0;
+  const plan = buildPlan(price, atrV, R1,R2,S1,S2, e25v, useLong, fundNow, oiRatio);
+
+  // ---- 庄家行为识别 ----
+  const boss = detectBoss(crowd, {price, e7v,e25v,e99v, rsiV, atrV, R1,S1, hi80,lo80,
+                    fundNow, oiRatio, bbPos: bbl?((price-bbl.dn)/(bbl.up-bbl.dn||1)):0.5,
+                    st, meta});
+
+  // ---- 渲染 ----
+  const pnlBar = p => '<div class="bar"><i style="width:'+Math.min(100,Math.max(4,p*25))+'%;background:'+(p>=2?'var(--down)':p>=1.2?'var(--warn)':'var(--up)')+'"></i></div>';
+
+  const ring = (v)=>{
+    const r=40, C=2*Math.PI*r, off=C*(1-(Math.abs(v)+100)/200/1);
+    const col = v>15?'#F6465D':(v<-15?'#0ECB81':'#F0B90B');
+    return '<div class="ring"><svg width="92" height="92" viewBox="0 0 92 92">'+
+      '<circle cx="46" cy="46" r="40" fill="none" stroke="#252D3A" stroke-width="7"/>'+
+      '<circle cx="46" cy="46" r="40" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" '+
+      'stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*Math.abs(v)/200+ (v<0?C/2:0))+'"/></svg>'+
+      '<div class="txt"><b style="color:'+col+'">'+(v>0?'+':'')+v+'</b><span>多空倾向</span></div></div>';
+  };
+
+  const dirTxt = total>=45?'强烈偏多':total>=20?'偏多':total<=-45?'强烈偏空':total<=-20?'偏空':'多空均衡';
+
+  let html = '';
+
+  /* 综合评分 */
+  html += '<div class="sec"><div class="h2">综合研判</div><div class="card"><div class="scorebox">'+
+    ring(total)+
+    '<div class="scoretxt">'+
+      '<b style="font-size:14px;color:'+(total>0?'var(--up)':total<0?'var(--down)':'var(--warn)')+'">'+dirTxt+'</b><br>'+
+      '趋势面 <b>'+trendScore+'</b> ｜ 动量 <b>'+momoScore+'</b> ｜ 持仓结构 <b>'+crowdScore+'</b><br>'+
+      '价格 '+(price>e25v?'位于 EMA25 上方，中期结构偏强':'位于 EMA25 下方，中期结构偏弱')+
+      '；RSI '+rsiV.toFixed(1)+(rsiV>70?'（超买）':rsiV<30?'（超卖）':'（中性）')+
+    '</div></div></div></div>';
+
+  /* K线图 */
+  html += '<div class="sec"><div class="h2">4 小时 K 线</div><div class="card" style="padding:8px">'+
+    drawChart(c4.slice(-90), e25.slice(-90), e99.slice(-90))+
+    '<div style="display:flex;gap:12px;font-size:10.5px;color:var(--sub);margin-top:6px;padding:0 2px;">'+
+      '<span>● EMA25</span><span style="color:#A855F7">● EMA99</span>'+
+      '<span style="margin-left:auto">近 90 根 4H</span></div></div></div>';
+
+  /* 关键价位 */
+  html += '<div class="sec"><div class="h2">关键价位</div><div class="card"><div class="dg">'+
+    '<div class="i"><div class="k">压力 R2</div><div class="v up">'+pxFmt(R2)+'</div></div>'+
+    '<div class="i"><div class="k">压力 R1</div><div class="v up">'+pxFmt(R1)+'</div></div>'+
+    '<div class="i"><div class="k">现价</div><div class="v">'+pxFmt(price)+'</div></div>'+
+    '<div class="i"><div class="k">支撑 S1</div><div class="v down">'+pxFmt(S1)+'</div></div>'+
+    '<div class="i"><div class="k">支撑 S2</div><div class="v down">'+pxFmt(S2)+'</div></div>'+
+    '<div class="i"><div class="k">ATR(14)</div><div class="v">'+pxFmt(atrV)+'</div></div>'+
+    '</div></div></div>';
+
+  /* 多空点位计划 */
+  html += '<div class="sec"><div class="h2">交易点位计划</div><div class="card" style="padding:0;overflow:hidden">'+
+    '<table class="plan"><tr><th>方向</th><th>入场</th><th>止损</th><th>止盈1</th><th>止盈2</th><th>盈亏比</th></tr>'+
+    plan.map(p=>'<tr><td class="'+(p.long?'up':'down')+'" style="font-weight:700">'+p.name+'</td>'+
+      '<td>'+pxFmt(p.entry)+'</td><td>'+pxFmt(p.sl)+'</td><td>'+pxFmt(p.tp1)+'</td><td>'+pxFmt(p.tp2)+'</td>'+
+      '<td>'+p.rr.toFixed(2)+'</td></tr>').join('')+
+    '</table></div>'+
+    '<div style="font-size:11.5px;color:var(--sub);margin-top:6px;line-height:1.6;">'+
+      '首选方向：<b class="'+(plan[0].rr>=plan[1].rr?(plan[0].long?'up':'down'):(plan[1].long?'up':'down'))+'">'+
+      (plan[0].rr>=plan[1].rr?plan[0].name:plan[1].name)+'</b>'+
+      '（盈亏比 '+Math.max(plan[0].rr,plan[1].rr).toFixed(2)+'）· 止损按 1.2 倍 ATR 设置 · 建议单笔风险不超过本金 2%'+
+    '</div></div>';
+
+  /* 庄家状态 */
+  if(crowd){
+    html += '<div class="sec"><div class="h2">庄家/主力状态</div><div class="card">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'+
+        '<span class="tag '+boss.tag+'" style="font-size:12px;padding:3px 10px;">'+boss.state+'</span>'+
+        '<span style="font-size:12px;color:var(--sub)">置信度 '+(boss.conf)+'%</span>'+
+      '</div>'+
+      '<div class="dg">'+
+        '<div class="i"><div class="k">持仓量(USD)</div><div class="v">$'+bigNum(oiUsd)+'</div></div>'+
+        '<div class="i"><div class="k">24h OI 变化</div><div class="v '+cls(crowd.oiChg)+'">'+sgn(crowd.oiChg)+'%</div></div>'+
+        '<div class="i"><div class="k">持仓/成交</div><div class="v">'+(oiRatio*100).toFixed(1)+'%</div></div>'+
+        '<div class="i"><div class="k">大户账户多空比</div><div class="v">'+crowd.topAcc.toFixed(2)+'</div></div>'+
+        '<div class="i"><div class="k">大户持仓多空比</div><div class="v">'+crowd.topSize.toFixed(2)+'</div></div>'+
+        '<div class="i"><div class="k">全市场账户多空比</div><div class="v">'+crowd.allAcc.toFixed(2)+'</div></div>'+
+        '<div class="i"><div class="k">主动买卖比</div><div class="v '+cls(crowd.taker-1)+'">'+crowd.taker.toFixed(2)+'</div></div>'+
+        '<div class="i"><div class="k">24h 多单爆仓</div><div class="v up">$'+bigNum(crowd.liqL)+'</div></div>'+
+        '<div class="i"><div class="k">24h 空单爆仓</div><div class="v down">$'+bigNum(crowd.liqS)+'</div></div>'+
+      '</div>'+
+      '<div style="margin-top:10px;font-size:12.5px;color:#C3CCD9;line-height:1.7;">'+
+        boss.evidence.map(e=>'· '+e).join('<br>')+
+      '</div></div></div>';
+
+    /* 手法 */
+    html += '<div class="sec"><div class="h2">当前手法拆解</div>'+
+      boss.hands.map(h=>'<div class="hand"><div class="ht">'+h.t+'</div><div class="hd">'+h.d+'</div></div>').join('')+
+      '</div>';
+  }
+
+  /* AI 分析报告 */
+  html += '<div class="sec"><div class="h2">量化分析报告</div><div class="card"><div class="ana">'+
+    buildReport({price, e7v,e25v,e99v, rsiV, atrV, R1,R2,S1,S2, hi80,lo80, total, trendScore, momoScore,
+      crowdScore, crowd, plan, fundNow, oiRatio, bbPos: bbl?((price-bbl.dn)/(bbl.up-bbl.dn||1)):0.5,
+      boss, vol: meta.vol, chg: meta.chg})+
+    '</div></div></div>';
+
+  /* 资金费率 */
+  if(Array.isArray(fh) && fh.length){
+    const avg = fh.reduce((a,b)=>a+ +b.r,0)/fh.length;
+    html += '<div class="sec"><div class="h2">资金费率</div><div class="card"><div class="dg">'+
+      '<div class="i"><div class="k">当前</div><div class="v '+cls(fundNow)+'">'+(fundNow*100).toFixed(4)+'%</div></div>'+
+      '<div class="i"><div class="k">近 '+fh.length+' 期均值</div><div class="v '+cls(avg)+'">'+(avg*100).toFixed(4)+'%</div></div>'+
+      '<div class="i"><div class="k">年化成本</div><div class="v '+(Math.abs(avg)>0?'':'flat')+'">'+(avg*3*365*100).toFixed(1)+'%</div></div>'+
+      '</div><div style="font-size:12px;color:var(--sub);margin-top:9px;line-height:1.65;">'+
+      (fundNow>0.0005?'多头持续付费，多头拥挤，庄家砸盘成本低——警惕高位插针。'
+        :fundNow<-0.0005?'空头持续付费，空头拥挤，容易出现挤压空头的急涨。'
+        :'资金费率接近中性，多空成本均衡，暂无明显倾斜。')+
+      '</div></div></div>';
+  }
+
+  html += '<div class="foot" style="padding:16px 4px;">数据来源 Gate.io 公共接口 · 分析由内置多因子模型生成 · 不构成投资建议</div>';
+
+  $('s-body').innerHTML = html;
+}
+
+/* ---- 交易计划 ---- */
+function buildPlan(price, atrV, R1,R2,S1,S2, e25v, preferLong, fund, oiRatio){
+  const a = atrV||price*0.01;
+  // 做多：优先回踩 EMA25 或 S1 上方
+  let lEntry = Math.min(price, Math.max(e25v||price, S1 + a*0.3));
+  if(lEntry > price*1.005) lEntry = price;
+  let lSL = Math.min(S1 - a*0.25, lEntry - a*1.2);
+  if(lSL >= lEntry) lSL = lEntry - a*1.2;
+  const lTP1 = Math.max(R1, lEntry + a*1.5);
+  const lTP2 = Math.max(R2, lEntry + a*3);
+  const lRR = Math.abs(lTP1-lEntry)/Math.max(Math.abs(lEntry-lSL), 1e-9);
+
+  // 做空
+  let sEntry = Math.max(price, Math.min(e25v||price, R1 - a*0.3));
+  if(sEntry < price*0.995) sEntry = price;
+  let sSL = Math.max(R1 + a*0.25, sEntry + a*1.2);
+  if(sSL <= sEntry) sSL = sEntry + a*1.2;
+  const sTP1 = Math.min(S1, sEntry - a*1.5);
+  const sTP2 = Math.min(S2, sEntry - a*3);
+  const sRR = Math.abs(sEntry-sTP1)/Math.max(Math.abs(sSL-sEntry), 1e-9);
+
+  const long = {name:'做多', long:true, entry:lEntry, sl:lSL, tp1:lTP1, tp2:lTP2, rr:lRR};
+  const short = {name:'做空', long:false, entry:sEntry, sl:sSL, tp1:sTP1, tp2:sTP2, rr:sRR};
+  return preferLong ? [long, short] : [short, long];
+}
+
+/* ---- 庄家行为识别 ---- */
+function detectBoss(c, ctx){
+  if(!c) return {state:'数据不足', tag:'t-dim', conf:0, evidence:['该合约持仓统计数据不足，无法判断主力结构。'], hands:[]};
+  const ev=[];
+  let state='观望', tag='t-dim', conf=50, hands=[];
+
+  const {oiChg,pChg,topAcc,allAcc,topSize,taker,liqL,liqS,liqTot} = c;
+  const {price,e25v,rsiV,fundNow,oiRatio,bbPos} = ctx;
+
+  ev.push('持仓量 24h '+(oiChg>0?'增加':'减少')+' '+Math.abs(oiChg).toFixed(1)+'%，同期价格'+(pChg>0?'上涨':'下跌')+' '+Math.abs(pChg).toFixed(1)+'%');
+  if(topAcc && allAcc) ev.push('大户账户多空比 '+topAcc.toFixed(2)+'，全市场账户多空比 '+allAcc.toFixed(2)+(topAcc>allAcc*1.3?'（大户明显更看多）':topAcc<allAcc*0.77?'（大户明显更看空，散户在接盘）':'（结构一致）'));
+  if(liqTot>1000) ev.push('近 24h 爆仓：多单 $'+bigNum(liqL)+' / 空单 $'+bigNum(liqS));
+
+  // 状态判定
+  if(oiChg>4 && pChg>1.5){
+    state='拉升建仓'; tag='t-hot'; conf=72;
+    ev.push('持仓与价格同步走高，主力资金正在加仓推动');
+    hands=[
+      {t:'急速脱离成本区', d:'主力先用少量资金快速拉高，把价格推出自己的建仓成本带，让跟风盘不敢追、让空头来不及反应。特征是 1~2 根放量大阳线，涨幅明显超过同期大盘。'},
+      {t:'对倒放量制造 FOMO', d:'通过自成交把成交量做大，在盘口挂出大额买单制造"资金涌入"的假象，吸引散户追多。识别点：成交额放大但持仓量增幅不及成交额增幅，说明有相当部分是左手倒右手。'},
+      {t:'挤压空头（Short Squeeze）', d:'故意把价格拉到空头止损密集区上方，触发连环爆仓，爆仓买单又反过来推高价格，形成自我强化的上涨。近 24h 空单爆仓占比越高，这个阶段的动能越强。'}
+    ];
+  }
+  else if(oiChg>4 && pChg<-1.5){
+    state='空头建仓压制'; tag='t-cool'; conf=70;
+    ev.push('持仓增加但价格下跌，空头在持续加仓，下跌是有资金推动的');
+    hands=[
+      {t:'高位派发 + 反手做空', d:'主力在前期高位把手里的现货/多单分批卖给散户，同时开空单锁定利润。表现是价格横盘或缓跌但持仓量不断上升，大户多空比持续走低。'},
+      {t:'压制反弹诱多', d:'每次价格反弹到关键均线附近就用大单砸回去，制造"反弹无力"的观感，让抄底的多头反复被套、最后割肉。识别点：反弹时成交萎缩，下跌时成交放大。'},
+      {t:'连环爆多单', d:'把价格打穿多头止损密集区，触发强平，强平卖单继续压低价格，形成瀑布。这类行情往往一根长下影或连续阴线后突然止跌，因为主力要回收筹码。'}
+    ];
+  }
+  else if(oiChg<-4 && pChg>1.5){
+    state='空头回补反弹'; tag='t-warn'; conf=62;
+    ev.push('持仓下降但价格反弹，上涨主要来自空头平仓，不是新多进场');
+    hands=[
+      {t:'空头获利平仓推价', d:'空头在低位集中平仓，平仓本身是买入行为，会把价格推高，但持仓量同步下降说明没有新资金接力。这种反弹通常到前期密集成交区就结束。'},
+      {t:'诱多出货', d:'主力借空头回补造成的反弹，把自己剩余的多单倒给追高的散户。识别点：反弹过程中大户持仓多空比不升反降。'},
+      {t:'假突破', d:'故意把价格拉到近期高点上方一点点，触发突破买入的程序化资金，然后迅速回落。'}
+    ];
+  }
+  else if(oiChg<-4 && pChg<-1.5){
+    state='多头止损离场'; tag='t-warn'; conf=60;
+    ev.push('持仓与价格同步下降，多头在被清洗出局，属于下跌尾段特征');
+    hands=[
+      {t:'瀑布洗盘', d:'快速下砸把杠杆多头全部扫掉，然后在低位接回便宜筹码。特征是跌得急、跌得深，但很快出现长下影或放量止跌。'},
+      {t:'插针扫止损', d:'在流动性稀薄的时段（如凌晨）用一笔大单把价格瞬间打到止损区下方，触发连锁强平后立刻拉回。K 线上留下一根极长的下影线。'},
+      {t:'磨盘吸筹', d:'清洗完成后进入低波动横盘，用时间消耗剩余多头的耐心，同时悄悄建仓。表现是成交量萎缩、振幅收窄。'}
+    ];
+  }
+  else if(Math.abs(oiChg)<=4 && Math.abs(pChg)<=1.5){
+    state='横盘蓄势'; tag='t-info'; conf=55;
+    ev.push('持仓与价格都在窄幅波动，主力处于观察或悄悄建仓阶段');
+    hands=[
+      {t:'缩量磨盘', d:'用长时间的低波动消磨市场耐心，让短线资金离场，同时以极低的价格慢慢吸筹。成交量持续萎缩是核心特征。'},
+      {t:'双向挂单控制价格', d:'在买卖两侧都挂大额限价单，把价格锁在一个窄区间内，自己在这个区间里高抛低吸赚差价。'},
+      {t:'等待方向性消息', d:'主力已完成建仓但不确定方向，等宏观数据或行业消息落地后再选择拉升或砸盘。此时的突破往往伴随巨量。'}
+    ];
+  }
+  else {
+    state='趋势延续'; tag='t-info'; conf=58;
+    ev.push('持仓与价格变动方向一致但幅度温和，属于健康的趋势推进');
+    hands=[
+      {t:'边拉边洗', d:'上涨过程中不断制造小幅回调，把不坚定的多头洗出去，降低后续拉升的抛压。回调幅度通常不超过前一波涨幅的 38.2%。'},
+      {t:'阶梯式建仓', d:'在每一个回调低点分批买入，而不是一次性建仓，成本曲线平缓。持仓量呈阶梯式上升。'},
+      {t:'跟随大盘节奏', d:'没有独立行情，主要跟随 BTC 波动，此时应优先看 BTC 的方向。'}
+    ];
+  }
+
+  // 追加针对性提示
+  if(fundNow>0.0008){
+    ev.push('资金费率 '+((fundNow*100).toFixed(4))+'% 偏高，多头付费沉重，主力有动机向下猎杀多头');
+  } else if(fundNow<-0.0008){
+    ev.push('资金费率 '+((fundNow*100).toFixed(4))+'% 为负，空头付费沉重，容易出现挤空急涨');
+  }
+  if(oiRatio>0.35){
+    ev.push('持仓量/成交额达 '+(oiRatio*100).toFixed(0)+'%，杠杆堆积偏重，价格容易被大单撬动，也更容易发生连环爆仓');
+  }
+  if(liqTot>0 && liqS/Math.max(liqTot,1)>0.7 && liqTot>50000){
+    ev.push('空单爆仓占绝对主导，说明刚经历过一轮挤空，短期动能可能透支');
+  }
+  if(bbPos>0.95) ev.push('价格贴近布林上轨，短线过热');
+  if(bbPos<0.05) ev.push('价格贴近布林下轨，短线超跌');
+
+  return {state, tag, conf, evidence: ev, hands};
+}
+
+/* ---- 分析报告 ---- */
+function buildReport(x){
+  const {price,e7v,e25v,e99v,rsiV,atrV,R1,R2,S1,S2,hi80,lo80,total,trendScore,momoScore,crowdScore,
+         crowd,plan,fundNow,oiRatio,bbPos,boss,vol,chg} = x;
+  const P=[];
+  const dir = total>=45?'偏多（较强）':total>=20?'偏多':total<=-45?'偏空（较强）':total<=-20?'偏空':'中性';
+
+  P.push('<b>一、盘面结构</b><br>当前价格 <span class="hl">'+pxFmt(price)+'</span>，24 小时'+(chg>=0?'上涨':'下跌')+' '+Math.abs(chg).toFixed(2)+'%，成交额 $'+bigNum(vol)+
+    '。均线系统呈'+(price>e7v&&e7v>e25v?'多头排列':'空头排列')+'：EMA7 '+pxFmt(e7v)+' / EMA25 '+pxFmt(e25v)+' / EMA99 '+pxFmt(e99v)+
+    '，价格位于 EMA25 '+(price>e25v?'上方':'下方')+'，中期'+(price>e25v?'结构完好':'结构已破')+'。近 80 根 4H 波动区间 '+pxFmt(lo80)+' ~ '+pxFmt(hi80)+
+    '，当前处于区间 ' + ((price-lo80)/((hi80-lo80)||1)*100).toFixed(0) + '% 分位。');
+
+  P.push('<b>二、动量与情绪</b><br>RSI(14) 为 <span class="hl">'+rsiV.toFixed(1)+'</span>'+
+    (rsiV>70?'，进入超买区，短线有回调压力，追多性价比低':rsiV<30?'，处于超卖区，存在技术性反弹需求':'，处于中性区间，方向选择尚未明朗')+
+    '；价格在布林带中处于 '+((bbPos)*100).toFixed(0)+'% 位置'+(bbPos>0.9?'（贴上轨，波动放大）':bbPos<0.1?'（贴下轨，超跌）':'')+
+    '。ATR(14) 为 '+pxFmt(atrV)+'，约合价格的 '+(atrV/price*100).toFixed(2)+'%，'+(atrV/price>0.03?'波动剧烈，务必放宽止损':'波动相对温和')+'。');
+
+  if(crowd){
+    P.push('<b>三、持仓与资金结构</b><br>持仓量 $'+bigNum(oiRatio*vol)+'，24 小时变化 <span class="hl">'+sgn(crowd.oiChg)+'%</span>；'+
+      '大户账户多空比 '+crowd.topAcc.toFixed(2)+'、大户持仓多空比 '+crowd.topSize.toFixed(2)+'，全市场账户多空比 '+crowd.allAcc.toFixed(2)+'。'+
+      (crowd.topAcc>crowd.allAcc*1.25?'大户仓位方向明显比散户更偏多，筹码在向强手集中，这是相对健康的信号。'
+       :crowd.topAcc<crowd.allAcc*0.8?'大户比散户更偏空，典型的"散户接盘"结构，需要警惕。':'大户与散户方向基本一致，没有明显的对手盘结构。')+
+      ' 主动买卖比 '+crowd.taker.toFixed(2)+'，近 24h 多单爆仓 $'+bigNum(crowd.liqL)+'、空单爆仓 $'+bigNum(crowd.liqS)+'。');
+  }
+
+  P.push('<b>四、主力行为研判</b><br>综合判断当前处于 <span class="hl">'+boss.state+'</span> 阶段（置信度 '+boss.conf+'%）。'+
+    (boss.hands.length?'主力最可能采用的手法包括「'+boss.hands.map(h=>h.t).join('」「')+'」，具体识别特征见上方手法拆解。':''));
+
+  P.push('<b>五、可执行方案</b><br>综合评分 <span class="hl">'+(total>0?'+':'')+total+'</span>，方向倾向 <b>'+dir+'</b>。<br>'+
+    '· <span class="'+(plan[0].long?'rd':'gn')+'">'+plan[0].name+'方案</span>：入场 '+pxFmt(plan[0].entry)+'，止损 '+pxFmt(plan[0].sl)+
+      '（距入场 '+Math.abs((plan[0].sl-plan[0].entry)/plan[0].entry*100).toFixed(2)+'%），第一目标 '+pxFmt(plan[0].tp1)+
+      '，第二目标 '+pxFmt(plan[0].tp2)+'，盈亏比 <b>'+plan[0].rr.toFixed(2)+'</b>。<br>'+
+    '· 备选：'+(plan[0].rr>=1.5?'若价格反向突破 '+pxFmt(plan[0].sl)+'，则视为方案失效，可考虑反手参考 '+plan[1].name+'方案（入场 '+pxFmt(plan[1].entry)+'，止损 '+pxFmt(plan[1].sl)+'，盈亏比 '+plan[1].rr.toFixed(2)+'）。':'当前盈亏比不足，建议等待价格回到更优位置再介入，不要追单。'));
+
+  P.push('<b>六、风险提示</b><br>'+
+    (plan[0].rr<1.2?'盈亏比低于 1.2，属于低质量交易机会，宁可错过。':'')+
+    (oiRatio>0.35?'杠杆堆积较重，容易出现插针和连环爆仓，止损不要设在整数关口或明显的前低/前高。':'')+
+    (Math.abs(fundNow)>0.0008?'资金费率偏离较大，持仓过夜成本高，注意结算时点的价格波动。':'')+
+    '建议单笔风险敞口不超过账户的 2%，并按 ATR 动态调整仓位——波动越大，仓位越小。所有点位为模型基于历史结构的推算，实际执行需结合盘口挂单厚度与即时消息面。');
+
+  return P.join('<p></p>');
+}
+
+/* ---- K线图 ---- */
+function drawChart(cs, e25, e99){
+  const W=900,H=380,P=10;
+  if(!cs||cs.length<3) return '<div class="loading" style="padding:30px">K线数据不足</div>';
+  const hi=Math.max(...cs.map(c=>+c.h)), lo=Math.min(...cs.map(c=>+c.l));
+  const rg=(hi-lo)||1;
+  const y=v=>H-P-(v-lo)/rg*(H-2*P);
+  const bw=(W-2*P)/cs.length;
+  const bodyW=Math.max(bw*0.62,1.2);
+
+  let s='<svg viewBox="0 0 '+W+' '+H+'" class="chart" preserveAspectRatio="none">';
+  // 网格
+  for(let i=0;i<=4;i++){
+    const yy=P+(H-2*P)*i/4;
+    s+='<line x1="0" y1="'+yy+'" x2="'+W+'" y2="'+yy+'" stroke="#1E2530" stroke-width="1"/>';
+  }
+  // K线
+  cs.forEach((c,i)=>{
+    const o=+c.o,h=+c.h,l=+c.l,cl=+c.c;
+    const x=P+i*bw+bw/2;
+    const up=cl>=o;
+    const col=up?'#F6465D':'#0ECB81';
+    s+='<line x1="'+x.toFixed(1)+'" y1="'+y(h).toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+y(l).toFixed(1)+'" stroke="'+col+'" stroke-width="1"/>';
+    const yo=y(Math.max(o,cl)), yc=y(Math.min(o,cl));
+    s+='<rect x="'+(x-bodyW/2).toFixed(1)+'" y="'+yo.toFixed(1)+'" width="'+bodyW.toFixed(1)+'" height="'+Math.max(yc-yo,1).toFixed(1)+'" fill="'+col+'"/>';
+  });
+  // 均线
+  const line=(arr,col)=>{
+    const pts=arr.map((v,i)=>{
+      if(v==null) return null;
+      const x=P+i*bw+bw/2;
+      return x.toFixed(1)+','+y(v).toFixed(1);
+    }).filter(Boolean).join(' ');
+    return pts?'<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.6" opacity=".9"/>':'';
+  };
+  s+=line(e25,'#F0B90B');
+  s+=line(e99,'#A855F7');
+  s+='</svg>';
+  return s;
+}
+
+/* ================= 事件绑定 ================= */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    FILTER=t.dataset.f;
+    if(FILTER==='sig' && !SCAN) { scanSignals(); return; }
+    render();
+  };
+});
+$('q').oninput = ()=>{ if(FILTER==='sig'){ FILTER='vol'; document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.f==='vol')); } render(); };
+$('scan').onclick = scanSignals;
+
+// 初始化
+(async()=>{
+  try{ await loadMarket(false); }
+  catch(e){
+    $('list').innerHTML='<div class="err">行情加载失败：'+e.message+'<br><br>请检查网络（需能访问 api.gateio.ws）后刷新页面</div>';
+    return;
+  }
+  // 支持 #BTC_USDT 直达详情（可分享链接）
+  const h = decodeURIComponent(location.hash.replace('#','')).trim().toUpperCase();
+  if(h && (h.includes('_USDT') || ALL.some(x=>x.sym===h))){
+    const c = h.includes('_USDT') ? h : h+'_USDT';
+    setTimeout(()=>openCoin(c, true), 100);
+  }
+})();
+setInterval(()=>{ if(!document.getElementById('sheet').classList.contains('open')) loadMarket(true).catch(()=>{}); }, 60000);
+</script>
+</body>
+</html>
