@@ -81,9 +81,13 @@ def fetch_positions(pid):
         r = req(EP_POS + str(pid), timeout=12)
         data = r.get('data')
         if not isinstance(data, list):
+            print('DEBUG positions %s -> data is %s: %s' % (pid, type(data).__name__, str(r)[:300]))
             return None
+        if data:
+            print('DEBUG positions %s raw[0]: %s' % (pid, json.dumps(data[0], ensure_ascii=False)[:500]))
         return data
-    except Exception:
+    except Exception as e:
+        print('DEBUG positions %s ERR: %s' % (pid, str(e)[:200]))
         return None
 
 
