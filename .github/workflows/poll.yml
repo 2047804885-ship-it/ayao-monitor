@@ -31,6 +31,8 @@ jobs:
         run: timeout 120 python poll.py || echo "poll exited non-zero, continue"
       - name: Smart money consensus
         run: timeout 200 python poll_market.py || echo "market poll failed, continue"
+      - name: Probe trade API
+        run: timeout 90 python probe_trade.py || echo "probe failed, continue"
       - name: Commit snapshot
         run: |
           git config user.name "ayao-bot"
