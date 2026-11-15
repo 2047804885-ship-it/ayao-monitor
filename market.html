@@ -660,7 +660,7 @@ async function openCoin(contract, noHash){
   syncSubs();   // 订阅该币种实时行情
 
   try{
-    const [c4, c1, st, cts, fh] = await Promise.all([
+    const [c4raw, c1raw, st, cts, fh] = await Promise.all([
       J(API+'/candlesticks?contract='+contract+'&interval=4h&limit=150'),
       J(API+'/candlesticks?contract='+contract+'&interval=1h&limit=120'),
       J(API+'/contract_stats?contract='+contract+'&interval=1h&limit=100'),
@@ -668,14 +668,24 @@ async function openCoin(contract, noHash){
       J(API+'/funding_rate?contract='+contract+'&limit=20').catch(()=>null)
     ]);
     if(CUR!==contract) return;
-    renderDetail(meta, c4, c1, st, cts, fh);
+    // 只用已收盘 K 线：未收盘那根的高/低/量还在变，会让 ATR、结构位每次刷新都不一样
+    const c4 = dropUnclosed(c4raw, 14400);
+    const c1 = dropUnclosed(c1raw, 3600);
+    renderDetail(meta, c4, c1, st, cts, fh, c1raw, c4raw);
   }catch(e){
     if(CUR!==contract) return;
     $('s-body').innerHTML = '<div class="err">数据加载失败：'+e.message+'<br><br>请检查网络后返回重试</div>';
   }
 }
 
-function renderDetail(meta, c4, c1, st, cts, fh){
+/* 丢弃未收盘的最后一根 K 线 */
+function dropUnclosed(cs, secs){
+  if(!Array.isArray(cs) || cs.length < 2) return cs || [];
+  const t = +cs[cs.length-1].t;
+  return (Date.now()/1000 < t + secs) ? cs.slice(0, -1) : cs;
+}
+
+function renderDetail(meta, c4, c1, st, cts, fh, c1raw, c4raw){
   const price = +meta.last;
   const closes = c4.map(c=>+c.c);
   const e7=ema(closes,7), e25=ema(closes,25), e99=ema(closes,99);
@@ -735,6 +745,21 @@ function renderDetail(meta, c4, c1, st, cts, fh){
   const dirTxt = total>=45?'强烈偏多':total>=20?'偏多':total<=-45?'强烈偏空':total<=-20?'偏空':'多空均衡';
 
   let html = '';
+
+  /* 数据状态条：让每个数字都能追溯到来源与时间 */
+  const stAge = (Array.isArray(st) && st.length && st[st.length-1].time)
+    ? Math.max(0, Math.round((Date.now()/1000 - (+st[st.length-1].time))/60)) : null;
+  const hm = t => t ? new Date(+t*1000).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}) : '—';
+  html += '<div style="font-size:11px;color:var(--dim);line-height:1.7;background:var(--panel);'
+    + 'border:1px solid var(--line);border-radius:9px;padding:8px 11px;margin-top:12px">'
+    + '<b style="color:var(--sub)">数据来源与时效</b><br>'
+    + '· 现价：Gate.io USDT 永续实时盘口<br>'
+    + '· 4H K 线：截至 ' + hm(c4.length?c4[c4.length-1].t:0) + '（已收盘）'
+    + (c4raw && c4.length < c4raw.length ? '，未收盘的当前周期已剔除' : '') + '<br>'
+    + '· 1H K 线：截至 ' + hm(c1.length?c1[c1.length-1].t:0) + '（已收盘）<br>'
+    + '· 大户/爆仓统计：' + (stAge===null ? '—' : (stAge+' 分钟前快照' + (stAge>60?'（⚠ 偏旧）':'')))
+    + '，Gate 平台口径，非全市场'
+    + '</div>';
 
   /* 综合评分 */
   html += '<div class="sec"><div class="h2">综合研判</div><div class="card"><div class="scorebox">'+
