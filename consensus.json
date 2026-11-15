@@ -1,6 +1,6 @@
 {
- "time": "2026-11-15 17:33:17 北京时间",
- "ts": 1794735197,
+ "time": "2026-11-15 17:35:54 北京时间",
+ "ts": 1794735354,
  "scanned": 60,
  "qualified": 23,
  "publicPos": 4,
@@ -119,7 +119,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00006405"
+     "mark": "0.00006400"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -167,7 +167,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00006405"
+     "mark": "0.00006400"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -302,7 +302,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.006786,
+   "markAvg": 0.006784,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -311,7 +311,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02714549"
+     "mark": "0.02713686"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -350,7 +350,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.006786,
+   "markAvg": 0.006784,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -359,7 +359,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02714549"
+     "mark": "0.02713686"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -398,7 +398,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000741,
+   "markAvg": 0.00074,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -407,7 +407,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00296313"
+     "mark": "0.00295800"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -446,7 +446,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000741,
+   "markAvg": 0.00074,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -455,7 +455,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00296313"
+     "mark": "0.00295800"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1070,7 +1070,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004441,
+   "markAvg": 0.004373,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1079,7 +1079,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01776400"
+     "mark": "0.01749200"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1118,7 +1118,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.004275,
-   "markAvg": 0.004441,
+   "markAvg": 0.004373,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1127,7 +1127,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.017099",
-     "mark": "0.01776400"
+     "mark": "0.01749200"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1550,7 +1550,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.029317,
+   "markAvg": 0.029188,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1559,7 +1559,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.11727000"
+     "mark": "0.11675000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1598,7 +1598,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.029317,
+   "markAvg": 0.029188,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1607,7 +1607,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.11727000"
+     "mark": "0.11675000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1646,7 +1646,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.054675,
+   "markAvg": 0.054648,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1655,7 +1655,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.21870000"
+     "mark": "0.21859215"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1694,7 +1694,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.054675,
+   "markAvg": 0.054648,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1703,7 +1703,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.21870000"
+     "mark": "0.21859215"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1742,7 +1742,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00011,
+   "markAvg": 0.000111,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1751,7 +1751,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00044018"
+     "mark": "0.00044243"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1790,7 +1790,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00011,
+   "markAvg": 0.000111,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1799,7 +1799,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00044018"
+     "mark": "0.00044243"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1838,7 +1838,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.016886,
+   "markAvg": 0.01688,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1847,7 +1847,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.06754494"
+     "mark": "0.06751810"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -1886,7 +1886,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.016886,
+   "markAvg": 0.01688,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -1895,7 +1895,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.06754494"
+     "mark": "0.06751810"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -2894,7 +2894,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.01026,
+   "markAvg": 0.010223,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -2903,7 +2903,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.04104000"
+     "mark": "0.04089140"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -2942,7 +2942,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.01026,
+   "markAvg": 0.010223,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -2951,7 +2951,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.04104000"
+     "mark": "0.04089140"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -2990,7 +2990,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005956,
+   "markAvg": 0.006025,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -2999,7 +2999,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02382500"
+     "mark": "0.02410000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -3038,7 +3038,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005956,
+   "markAvg": 0.006025,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -3047,7 +3047,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02382500"
+     "mark": "0.02410000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -3086,7 +3086,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 891.728125,
-   "markAvg": 1830.526064,
+   "markAvg": 1830.209837,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -3095,7 +3095,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "1829.75023256"
+     "mark": "1828.78050922"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -3122,7 +3122,7 @@
      "copiers": 190,
      "lever": null,
      "entry": "1778.0",
-     "mark": "1829.86518605"
+     "mark": "1829.57000000"
     }
    ]
   },
@@ -3134,7 +3134,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 1830.526064,
+   "markAvg": 1830.209837,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -3143,7 +3143,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "1829.75023256"
+     "mark": "1828.78050922"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -3170,7 +3170,7 @@
      "copiers": 190,
      "lever": null,
      "entry": "0.0",
-     "mark": "1829.86518605"
+     "mark": "1829.57000000"
     }
    ]
   },
@@ -3758,7 +3758,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000488,
+   "markAvg": 0.000487,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -3767,7 +3767,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00195359"
+     "mark": "0.00194909"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -3806,7 +3806,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000488,
+   "markAvg": 0.000487,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -3815,7 +3815,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00195359"
+     "mark": "0.00194909"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -4334,7 +4334,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003332,
+   "markAvg": 0.003318,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -4343,7 +4343,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01333000"
+     "mark": "0.01327000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -4382,7 +4382,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003332,
+   "markAvg": 0.003318,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -4391,7 +4391,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01333000"
+     "mark": "0.01327000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -4622,7 +4622,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.5805,
+   "markAvg": 0.579568,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -4631,7 +4631,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "2.32200000"
+     "mark": "2.31827349"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -4670,7 +4670,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.5805,
+   "markAvg": 0.579568,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -4679,7 +4679,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "2.32200000"
+     "mark": "2.31827349"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -4910,7 +4910,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005251,
+   "markAvg": 0.00524,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -4919,7 +4919,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02100500"
+     "mark": "0.02096000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -4958,7 +4958,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005251,
+   "markAvg": 0.00524,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -4967,7 +4967,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02100500"
+     "mark": "0.02096000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5006,7 +5006,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00038,
+   "markAvg": 0.000379,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5015,7 +5015,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00152077"
+     "mark": "0.00151676"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5054,7 +5054,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00038,
+   "markAvg": 0.000379,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5063,7 +5063,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00152077"
+     "mark": "0.00151676"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5198,7 +5198,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.016102,
+   "markAvg": 0.016072,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5207,7 +5207,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.06440838"
+     "mark": "0.06428713"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5246,7 +5246,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.016102,
+   "markAvg": 0.016072,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5255,7 +5255,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.06440838"
+     "mark": "0.06428713"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5294,7 +5294,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002883,
+   "markAvg": 0.002871,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5303,7 +5303,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01153000"
+     "mark": "0.01148335"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5342,7 +5342,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002883,
+   "markAvg": 0.002871,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5351,7 +5351,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01153000"
+     "mark": "0.01148335"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5390,7 +5390,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.008756,
+   "markAvg": 0.008738,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5399,7 +5399,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.03502492"
+     "mark": "0.03495002"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5438,7 +5438,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.008756,
+   "markAvg": 0.008738,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5447,7 +5447,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.03502492"
+     "mark": "0.03495002"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5678,7 +5678,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001133,
+   "markAvg": 0.001122,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5687,7 +5687,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00453200"
+     "mark": "0.00448626"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5726,7 +5726,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001133,
+   "markAvg": 0.001122,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5735,7 +5735,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00453200"
+     "mark": "0.00448626"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5870,7 +5870,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.597746,
+   "markAvg": 0.597168,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5879,7 +5879,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "2.39098558"
+     "mark": "2.38867026"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -5918,7 +5918,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.597746,
+   "markAvg": 0.597168,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -5927,7 +5927,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "2.39098558"
+     "mark": "2.38867026"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -6542,7 +6542,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004966,
+   "markAvg": 0.004961,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -6551,7 +6551,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01986287"
+     "mark": "0.01984426"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -6590,7 +6590,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004966,
+   "markAvg": 0.004961,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -6599,7 +6599,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01986287"
+     "mark": "0.01984426"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -6926,7 +6926,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000253,
+   "markAvg": 0.000252,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -6935,7 +6935,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00101151"
+     "mark": "0.00100900"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -6974,7 +6974,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000253,
+   "markAvg": 0.000252,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -6983,7 +6983,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00101151"
+     "mark": "0.00100900"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7031,7 +7031,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00813763"
+     "mark": "0.00813524"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7079,7 +7079,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00813763"
+     "mark": "0.00813524"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7118,7 +7118,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001125,
+   "markAvg": 0.001118,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7127,7 +7127,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00449802"
+     "mark": "0.00447310"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7166,7 +7166,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001125,
+   "markAvg": 0.001118,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7175,7 +7175,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00449802"
+     "mark": "0.00447310"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7310,7 +7310,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.064217,
+   "markAvg": 0.064012,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7319,7 +7319,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.25686797"
+     "mark": "0.25604713"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7358,7 +7358,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.064217,
+   "markAvg": 0.064012,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7367,7 +7367,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.25686797"
+     "mark": "0.25604713"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7406,7 +7406,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001702,
+   "markAvg": 0.001687,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7415,7 +7415,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00680822"
+     "mark": "0.00674676"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7454,7 +7454,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001702,
+   "markAvg": 0.001687,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7463,7 +7463,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00680822"
+     "mark": "0.00674676"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7886,7 +7886,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00496,
+   "markAvg": 0.004943,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7895,7 +7895,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01984000"
+     "mark": "0.01977216"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -7934,7 +7934,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00496,
+   "markAvg": 0.004943,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -7943,7 +7943,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01984000"
+     "mark": "0.01977216"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -8750,7 +8750,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.034154,
+   "markAvg": 0.034061,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -8759,7 +8759,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.13661674"
+     "mark": "0.13624567"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -8798,7 +8798,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.034154,
+   "markAvg": 0.034061,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -8807,7 +8807,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.13661674"
+     "mark": "0.13624567"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -8846,7 +8846,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002146,
+   "markAvg": 0.002143,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -8855,7 +8855,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00858329"
+     "mark": "0.00857330"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -8894,7 +8894,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002146,
+   "markAvg": 0.002143,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -8903,7 +8903,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00858329"
+     "mark": "0.00857330"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -9134,7 +9134,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002042,
+   "markAvg": 0.002041,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -9143,7 +9143,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00816972"
+     "mark": "0.00816200"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -9182,7 +9182,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002042,
+   "markAvg": 0.002041,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -9191,7 +9191,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00816972"
+     "mark": "0.00816200"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -9326,7 +9326,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.165949,
+   "markAvg": 0.165415,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -9335,7 +9335,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.66379778"
+     "mark": "0.66165960"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -9374,7 +9374,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.165949,
+   "markAvg": 0.165415,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -9383,7 +9383,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.66379778"
+     "mark": "0.66165960"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -9902,7 +9902,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.007423,
+   "markAvg": 0.007408,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -9911,7 +9911,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02969000"
+     "mark": "0.02963193"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -9950,7 +9950,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.007423,
+   "markAvg": 0.007408,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -9959,7 +9959,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02969000"
+     "mark": "0.02963193"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -10286,7 +10286,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004129,
+   "markAvg": 0.004122,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -10295,7 +10295,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01651500"
+     "mark": "0.01648775"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -10334,7 +10334,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004129,
+   "markAvg": 0.004122,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -10343,7 +10343,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01651500"
+     "mark": "0.01648775"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -10382,7 +10382,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002655,
+   "markAvg": 0.002645,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -10391,7 +10391,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01062000"
+     "mark": "0.01057961"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -10430,7 +10430,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002655,
+   "markAvg": 0.002645,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -10439,7 +10439,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01062000"
+     "mark": "0.01057961"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -10766,7 +10766,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002174,
+   "markAvg": 0.00216,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -10775,7 +10775,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00869423"
+     "mark": "0.00864000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -10814,7 +10814,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002174,
+   "markAvg": 0.00216,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -10823,7 +10823,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00869423"
+     "mark": "0.00864000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -11630,7 +11630,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005395,
+   "markAvg": 0.005363,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -11639,7 +11639,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02158000"
+     "mark": "0.02145000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -11678,7 +11678,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005395,
+   "markAvg": 0.005363,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -11687,7 +11687,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02158000"
+     "mark": "0.02145000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -11726,7 +11726,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.471624,
+   "markAvg": 0.4704,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -11735,7 +11735,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "1.88649583"
+     "mark": "1.88160000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -11774,7 +11774,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.471624,
+   "markAvg": 0.4704,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -11783,7 +11783,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "1.88649583"
+     "mark": "1.88160000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -12398,7 +12398,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.0567,
+   "markAvg": 0.056302,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -12407,7 +12407,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.22680000"
+     "mark": "0.22520957"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -12446,7 +12446,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.0567,
+   "markAvg": 0.056302,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -12455,7 +12455,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.22680000"
+     "mark": "0.22520957"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -12494,7 +12494,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.008519,
+   "markAvg": 0.008473,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -12503,7 +12503,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.03407799"
+     "mark": "0.03389183"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -12542,7 +12542,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.008519,
+   "markAvg": 0.008473,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -12551,7 +12551,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.03407799"
+     "mark": "0.03389183"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -12782,7 +12782,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.017279,
+   "markAvg": 0.017178,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -12791,7 +12791,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.06911673"
+     "mark": "0.06871117"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -12830,7 +12830,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.017279,
+   "markAvg": 0.017178,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -12839,7 +12839,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.06911673"
+     "mark": "0.06871117"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -13166,7 +13166,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 16264.95,
-   "markAvg": 65576.42448,
+   "markAvg": 65543.62448,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -13175,7 +13175,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "65586.30000000"
+     "mark": "65512.20000000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -13202,7 +13202,7 @@
      "copiers": 190,
      "lever": null,
      "entry": "65059.8",
-     "mark": "65592.00000000"
+     "mark": "65534.90000000"
     }
    ]
   },
@@ -13214,7 +13214,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 65576.42448,
+   "markAvg": 65543.62448,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -13223,7 +13223,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "65586.30000000"
+     "mark": "65512.20000000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -13250,7 +13250,7 @@
      "copiers": 190,
      "lever": null,
      "entry": "0.0",
-     "mark": "65592.00000000"
+     "mark": "65534.90000000"
     }
    ]
   },
@@ -13262,7 +13262,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.011438,
+   "markAvg": 0.011385,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -13271,7 +13271,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.04575250"
+     "mark": "0.04554135"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -13310,7 +13310,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.011438,
+   "markAvg": 0.011385,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -13319,7 +13319,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.04575250"
+     "mark": "0.04554135"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -13646,7 +13646,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.08625,
+   "markAvg": 0.08585,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -13655,7 +13655,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.34499803"
+     "mark": "0.34340000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -13694,7 +13694,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.08625,
+   "markAvg": 0.08585,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -13703,7 +13703,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.34499803"
+     "mark": "0.34340000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14030,7 +14030,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.007254,
+   "markAvg": 0.007196,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14039,7 +14039,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02901552"
+     "mark": "0.02878265"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14078,7 +14078,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.007254,
+   "markAvg": 0.007196,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14087,7 +14087,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02901552"
+     "mark": "0.02878265"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14414,7 +14414,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003524,
+   "markAvg": 0.00351,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14423,7 +14423,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01409434"
+     "mark": "0.01404000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14462,7 +14462,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003524,
+   "markAvg": 0.00351,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14471,7 +14471,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01409434"
+     "mark": "0.01404000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14510,7 +14510,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.036413,
+   "markAvg": 0.036289,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14519,7 +14519,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.14565384"
+     "mark": "0.14515418"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14558,7 +14558,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.036413,
+   "markAvg": 0.036289,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14567,7 +14567,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.14565384"
+     "mark": "0.14515418"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14606,7 +14606,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.019243,
+   "markAvg": 0.019172,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14615,7 +14615,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07697147"
+     "mark": "0.07668832"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14654,7 +14654,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.019243,
+   "markAvg": 0.019172,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14663,7 +14663,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07697147"
+     "mark": "0.07668832"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14798,7 +14798,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.040063,
+   "markAvg": 0.039945,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14807,7 +14807,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.16025000"
+     "mark": "0.15977968"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -14846,7 +14846,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.040063,
+   "markAvg": 0.039945,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -14855,7 +14855,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.16025000"
+     "mark": "0.15977968"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15182,7 +15182,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00066,
+   "markAvg": 0.000659,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15191,7 +15191,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00264180"
+     "mark": "0.00263769"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15230,7 +15230,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00066,
+   "markAvg": 0.000659,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15239,7 +15239,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00264180"
+     "mark": "0.00263769"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15278,7 +15278,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.008313,
+   "markAvg": 0.008282,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15287,7 +15287,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.03325372"
+     "mark": "0.03312850"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15326,7 +15326,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.008313,
+   "markAvg": 0.008282,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15335,7 +15335,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.03325372"
+     "mark": "0.03312850"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15566,7 +15566,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.029037,
+   "markAvg": 0.029045,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15575,7 +15575,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.11614769"
+     "mark": "0.11618000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15614,7 +15614,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.02791,
-   "markAvg": 0.029037,
+   "markAvg": 0.029045,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15623,7 +15623,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.11164",
-     "mark": "0.11614769"
+     "mark": "0.11618000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15950,7 +15950,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003785,
+   "markAvg": 0.003782,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -15959,7 +15959,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01513826"
+     "mark": "0.01512871"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -15998,7 +15998,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003785,
+   "markAvg": 0.003782,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -16007,7 +16007,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01513826"
+     "mark": "0.01512871"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -16142,7 +16142,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003386,
+   "markAvg": 0.003374,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -16151,7 +16151,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01354500"
+     "mark": "0.01349454"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -16190,7 +16190,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003386,
+   "markAvg": 0.003374,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -16199,7 +16199,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01354500"
+     "mark": "0.01349454"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -16430,7 +16430,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.300116,
+   "markAvg": 0.299233,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -16439,7 +16439,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "1.20046293"
+     "mark": "1.19693333"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -16478,7 +16478,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.300116,
+   "markAvg": 0.299233,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -16487,7 +16487,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "1.20046293"
+     "mark": "1.19693333"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -17390,7 +17390,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00732,
+   "markAvg": 0.007304,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -17399,7 +17399,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02928133"
+     "mark": "0.02921730"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -17438,7 +17438,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00732,
+   "markAvg": 0.007304,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -17447,7 +17447,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02928133"
+     "mark": "0.02921730"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -17486,7 +17486,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.038715,
+   "markAvg": 0.038448,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -17495,7 +17495,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.15486000"
+     "mark": "0.15379000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -17534,7 +17534,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.038715,
+   "markAvg": 0.038448,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -17543,7 +17543,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.15486000"
+     "mark": "0.15379000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -17966,7 +17966,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.036518,
+   "markAvg": 0.03633,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -17975,7 +17975,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.14607167"
+     "mark": "0.14531867"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18014,7 +18014,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.036518,
+   "markAvg": 0.03633,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18023,7 +18023,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.14607167"
+     "mark": "0.14531867"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18071,7 +18071,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00646482"
+     "mark": "0.00646479"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18119,7 +18119,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00646482"
+     "mark": "0.00646479"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18638,7 +18638,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000524,
+   "markAvg": 0.000513,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18647,7 +18647,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00209641"
+     "mark": "0.00205157"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18686,7 +18686,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000524,
+   "markAvg": 0.000513,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18695,7 +18695,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00209641"
+     "mark": "0.00205157"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18734,7 +18734,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.014068,
+   "markAvg": 0.014022,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18743,7 +18743,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.05627000"
+     "mark": "0.05608871"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18782,7 +18782,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.014068,
+   "markAvg": 0.014022,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18791,7 +18791,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.05627000"
+     "mark": "0.05608871"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18830,7 +18830,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.022212,
+   "markAvg": 0.022156,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18839,7 +18839,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.08884608"
+     "mark": "0.08862329"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -18878,7 +18878,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.022212,
+   "markAvg": 0.022156,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -18887,7 +18887,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.08884608"
+     "mark": "0.08862329"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19214,7 +19214,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.01925,
+   "markAvg": 0.019223,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19223,7 +19223,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07699898"
+     "mark": "0.07689281"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19262,7 +19262,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.01925,
+   "markAvg": 0.019223,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19271,7 +19271,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07699898"
+     "mark": "0.07689281"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19310,7 +19310,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.032692,
+   "markAvg": 0.033743,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19319,7 +19319,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.13077000"
+     "mark": "0.13497000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19358,7 +19358,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.032692,
+   "markAvg": 0.033743,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19367,7 +19367,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.13077000"
+     "mark": "0.13497000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19502,7 +19502,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.012478,
+   "markAvg": 0.01241,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19511,7 +19511,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.04991278"
+     "mark": "0.04964079"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19550,7 +19550,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.012505,
-   "markAvg": 0.012478,
+   "markAvg": 0.01241,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19559,7 +19559,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.05002",
-     "mark": "0.04991278"
+     "mark": "0.04964079"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19694,7 +19694,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.019532,
+   "markAvg": 0.019403,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19703,7 +19703,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07812667"
+     "mark": "0.07761101"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19742,7 +19742,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.019532,
+   "markAvg": 0.019403,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19751,7 +19751,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07812667"
+     "mark": "0.07761101"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19886,7 +19886,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003177,
+   "markAvg": 0.003176,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19895,7 +19895,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01270679"
+     "mark": "0.01270490"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19934,7 +19934,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003177,
+   "markAvg": 0.003176,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19943,7 +19943,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01270679"
+     "mark": "0.01270490"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -19982,7 +19982,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000894,
+   "markAvg": 0.00089,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -19991,7 +19991,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00357600"
+     "mark": "0.00356006"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -20030,7 +20030,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.000894,
+   "markAvg": 0.00089,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -20039,7 +20039,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00357600"
+     "mark": "0.00356006"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -20558,7 +20558,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001969,
+   "markAvg": 0.00196,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -20567,7 +20567,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00787622"
+     "mark": "0.00784100"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -20606,7 +20606,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.001969,
+   "markAvg": 0.00196,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -20615,7 +20615,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00787622"
+     "mark": "0.00784100"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21038,7 +21038,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003507,
+   "markAvg": 0.0035,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21047,7 +21047,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01402726"
+     "mark": "0.01399901"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21086,7 +21086,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.003507,
+   "markAvg": 0.0035,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21095,7 +21095,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01402726"
+     "mark": "0.01399901"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21230,7 +21230,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00169,
+   "markAvg": 0.001685,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21239,7 +21239,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00676200"
+     "mark": "0.00673983"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21278,7 +21278,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.00169,
+   "markAvg": 0.001685,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21287,7 +21287,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.00676200"
+     "mark": "0.00673983"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21422,7 +21422,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.047975,
+   "markAvg": 0.04785,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21431,7 +21431,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.19190000"
+     "mark": "0.19140000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21470,7 +21470,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.047975,
+   "markAvg": 0.04785,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21479,7 +21479,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.19190000"
+     "mark": "0.19140000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21518,7 +21518,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004406,
+   "markAvg": 0.004395,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21527,7 +21527,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01762491"
+     "mark": "0.01758135"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21566,7 +21566,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004406,
+   "markAvg": 0.004395,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21575,7 +21575,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01762491"
+     "mark": "0.01758135"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21614,7 +21614,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004616,
+   "markAvg": 0.004613,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21623,7 +21623,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01846220"
+     "mark": "0.01845330"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -21662,7 +21662,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.004616,
+   "markAvg": 0.004613,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -21671,7 +21671,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01846220"
+     "mark": "0.01845330"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -22286,7 +22286,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.0189,
+   "markAvg": 0.018845,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -22295,7 +22295,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07560000"
+     "mark": "0.07538109"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -22334,7 +22334,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.0189,
+   "markAvg": 0.018845,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -22343,7 +22343,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07560000"
+     "mark": "0.07538109"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -22382,7 +22382,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.01837,
+   "markAvg": 0.018249,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -22391,7 +22391,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07348000"
+     "mark": "0.07299660"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -22430,7 +22430,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.01837,
+   "markAvg": 0.018249,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -22439,7 +22439,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.07348000"
+     "mark": "0.07299660"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -22478,7 +22478,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002984,
+   "markAvg": 0.002967,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -22487,7 +22487,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01193500"
+     "mark": "0.01186913"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -22526,7 +22526,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.002984,
+   "markAvg": 0.002967,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -22535,7 +22535,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.01193500"
+     "mark": "0.01186913"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23342,7 +23342,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.006689,
+   "markAvg": 0.006668,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -23351,7 +23351,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02675727"
+     "mark": "0.02667150"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23390,7 +23390,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.006689,
+   "markAvg": 0.006668,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -23399,7 +23399,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02675727"
+     "mark": "0.02667150"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23438,7 +23438,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005436,
+   "markAvg": 0.00542,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -23447,7 +23447,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02174223"
+     "mark": "0.02168000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23486,7 +23486,7 @@
    "roiAvg": 1305.3,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 0.005436,
+   "markAvg": 0.00542,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -23495,7 +23495,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "0.02174223"
+     "mark": "0.02168000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23534,7 +23534,7 @@
    "roiAvg": 1064.6,
    "leverAvg": null,
    "entryAvg": 307.515152,
-   "markAvg": 911.520846,
+   "markAvg": 911.140846,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -23543,7 +23543,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "909.69000000"
+     "mark": "908.55000000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23573,7 +23573,7 @@
    "roiAvg": 1064.6,
    "leverAvg": null,
    "entryAvg": 0.0,
-   "markAvg": 911.520846,
+   "markAvg": 911.140846,
    "traders": [
     {
      "name": "IMPERIAL TRADE ",
@@ -23582,7 +23582,7 @@
      "copiers": 200,
      "lever": null,
      "entry": "0.0",
-     "mark": "909.69000000"
+     "mark": "908.55000000"
     },
     {
      "name": "酷酷的腾 带单目标100倍",
@@ -23610,7 +23610,7 @@
    "pid": "5221328836951983617",
    "name": "Eth孙满仓",
    "winRate": 100.0,
-   "copiers": 999,
+   "copiers": 1000,
    "roi": 2161.8,
    "pnl": 10809.02545834,
    "positionShow": true,
@@ -23675,7 +23675,7 @@
    "pid": "5141621486582775041",
    "name": "赏你一个甜蜜蜜",
    "winRate": 93.4,
-   "copiers": 364,
+   "copiers": 363,
    "roi": 2135.9,
    "pnl": 65950.06749833,
    "positionShow": true,
@@ -23856,5 +23856,5 @@
    "empty": true
   }
  ],
- "cost": 7.7
+ "cost": 7.6
 }
