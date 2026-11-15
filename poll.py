@@ -94,7 +94,7 @@ def diffPositions(oldL, newL):
     return evs
 
 
-STAT_NOISE = ('盈亏变动', '收益率变动', '保证金变动')  # filtered out per user request
+STAT_NOISE = ('盈亏变动', '收益率变动', '保证金变动', '最新交易')  # filtered out per user request
 
 WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
 ICON = {'开仓': '🟢', '平仓': '🔴', '加仓': '🔵', '减仓': '🟠', '最新交易': '⏱'}
