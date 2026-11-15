@@ -197,12 +197,11 @@ def main():
         newprof.update({k: v for k, v in q.items() if k != 'chartItems' and v is not None})
 
     evs = diffPositions(snap.get('positions') or [], pos)
-    # also diff lastTradeTime: if it advanced, note a "有新交易" hint
-    old_lt = (snap.get('profile') or {}).get('lastTradeTime')
-    new_lt = newprof.get('lastTradeTime')
-    if isinstance(old_lt, (int, float)) and isinstance(new_lt, (int, float)) and new_lt > old_lt:
-        t = datetime.fromtimestamp(new_lt / 1000, CST).strftime('%m-%d %H:%M')
-        evs.append({'time': t, 'type': '最新交易', 'symbol': '', 'side': '', 'qty': ''})
+    # 注意：熬鹰已关闭持仓公开（positionShow=False），positions 恒为空、trade-history 恒为空。
+    # 因此绝不能用 lastTradeTime 变化去推"有新交易"——那条通知没有任何币种/方向/数量，
+    # 属于误导。只保留真正有持仓明细时 diff 出来的开平仓事件。
+    if not pos:
+        evs = []
 
     newsnap = {
         'portfolioId': pid, 'name': name,
