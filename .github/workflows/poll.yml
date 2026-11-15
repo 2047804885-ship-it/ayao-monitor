@@ -29,11 +29,13 @@ jobs:
           WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
           AYAO_TIMEOUT: '15'
         run: timeout 120 python poll.py || echo "poll exited non-zero, continue"
+      - name: Smart money consensus
+        run: timeout 200 python poll_market.py || echo "market poll failed, continue"
       - name: Commit snapshot
         run: |
           git config user.name "ayao-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add snap.json config.json
+          git add snap.json config.json consensus.json
           git diff --cached --quiet && echo "no change" && exit 0
           git commit -m "snapshot $(date -u +%FT%TZ)"
           git push
