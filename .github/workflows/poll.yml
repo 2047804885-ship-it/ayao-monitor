@@ -33,13 +33,13 @@ jobs:
         run: timeout 200 python poll_market.py || echo "market poll failed, continue"
       - name: Probe trade API
         run: timeout 90 python probe_trade.py || echo "probe failed, continue"
-      - name: Probe detail
-        run: timeout 90 python probe4.py || echo "probe failed"
+      - name: Build macro data
+        run: timeout 240 python gen_macro.py || echo "macro build failed, continue"
       - name: Commit snapshot
         run: |
           git config user.name "ayao-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add snap.json config.json consensus.json
+          git add snap.json config.json consensus.json macro.json fx.json holdings.json
           git diff --cached --quiet && echo "no change" && exit 0
           git commit -m "snapshot $(date -u +%FT%TZ)"
           git push
