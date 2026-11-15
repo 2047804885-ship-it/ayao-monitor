@@ -1,21 +1,32 @@
 name: Poll Ayao
 on:
   schedule:
+    # 每 5 分钟触发一次；每次触发后内部持续轮询 ~5 分钟（见 poll_loop.py）
+    # 这样即使 GitHub 免费版推迟/合并 cron，实际监控密度依然够高
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: ayao-poll
+  cancel-in-progress: false
+
 jobs:
   poll:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python poll.py
+      - name: Poll loop (5 min, every 20s)
+        env:
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+        run: python poll_loop.py
       - name: Commit snapshot
         run: |
           git config user.name "ayao-bot"
