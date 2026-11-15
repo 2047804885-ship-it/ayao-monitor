@@ -227,7 +227,6 @@ def main():
     if evs:  # only trade events are in evs now -> push each new event to WeChat
         print('wxpush result:', wxpush(evs, name))
 
-
 if __name__ == '__main__':
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == '--test-push':
