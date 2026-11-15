@@ -11,15 +11,18 @@
   python poll_loop.py             # 循环 ~5 分钟后退出（Actions 用）
   python poll_loop.py --once      # 只跑一次（本地调试）
 """
-import json, os, sys, time
+import json, os, sys, threading, time
 from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import poll as P
 
 CST = P.CST
-RUN_SECONDS = int(os.environ.get('POLL_RUN_SECONDS', '290'))   # Actions 里跑 ~4分50秒
+RUN_SECONDS = int(os.environ.get('POLL_RUN_SECONDS', '250'))   # Actions 里跑 ~4分10秒
 INTERVAL = int(os.environ.get('POLL_INTERVAL', '20'))          # 20 秒一次
+HARD_LIMIT = RUN_SECONDS + 60                                  # 硬上限，防卡死
+# 单轮内每个请求最多等 15 秒，避免整轮卡死
+os.environ.setdefault('AYAO_TIMEOUT', '15')
 
 
 def load_json(path, default):
@@ -116,28 +119,39 @@ def once():
 def main():
     if '--once' in sys.argv:
         n, evs, name, first = once()
-        print('once done. new events:', n)
+        print('once done. new events:', n, flush=True)
         return
+
+    # 硬看门狗：无论如何在 HARD_LIMIT 秒后强制退出，避免 workflow 卡死
+    def _watchdog():
+        time.sleep(HARD_LIMIT)
+        print('WATCHDOG: hard limit %ds reached, exiting' % HARD_LIMIT, flush=True)
+        os._exit(0)
+    threading.Thread(target=_watchdog, daemon=True).start()
 
     started = time.time()
     total = 0
     rounds = 0
-    print('=== poll_loop start, run %ds every %ds ===' % (RUN_SECONDS, INTERVAL))
+    print('=== poll_loop start, run %ds every %ds ===' % (RUN_SECONDS, INTERVAL), flush=True)
     while time.time() - started < RUN_SECONDS:
         try:
             n, evs, name, first = once()
             rounds += 1
             if first:
-                print('  baseline recorded (no push)')
+                print('  baseline recorded (no push)', flush=True)
             elif evs:
                 total += n
-                print('  NEW EVENTS:', n, [e.get('type') + (e.get('symbol') or '') for e in evs])
-                # 云端也直接推微信（配了 secrets 才生效），让手机在 Actions 跑时就收到
-                print('  ', P.wxpush(evs, name))
+                print('  NEW EVENTS:', n, [e.get('type') + (e.get('symbol') or '') for e in evs], flush=True)
+                print('  wxpush:', P.wxpush(evs, name), flush=True)
+            else:
+                print('  round %d ok, no change' % rounds, flush=True)
         except Exception as e:
-            print('  round err:', str(e)[:150])
+            print('  round err:', str(e)[:150], flush=True)
+        remain = RUN_SECONDS - (time.time() - started)
+        if remain <= INTERVAL:
+            break
         time.sleep(INTERVAL)
-    print('=== poll_loop done: %d rounds, %d new events ===' % (rounds, total))
+    print('=== poll_loop done: %d rounds, %d new events ===' % (rounds, total), flush=True)
 
 
 if __name__ == '__main__':
