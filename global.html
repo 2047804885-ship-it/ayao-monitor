@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0F3352">
+<title>🌍 全球宏观经济地图</title>
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
+<style>
+:root{--bg:#F4F6F8;--ink:#1F2937;--sub:#5B6472;--line:#E4E7EC;--blue:#1E5C8C;--red:#B03A2E;--grn:#1E7A32;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55;padding-bottom:40px;}
+.wrap{max-width:860px;margin:0 auto;padding:12px 10px 30px;}
+header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:4px;}
+h1{font-size:19px;color:var(--blue);}
+h2{font-size:16px;margin:14px 0 8px;padding-left:8px;border-left:4px solid var(--blue);}
+.meta{font-size:12px;color:var(--sub);margin-bottom:10px;}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.tab{padding:8px 14px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--sub);}
+.tab.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;}
+.metricBtns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.metricBtns button{padding:7px 11px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--sub);cursor:pointer;}
+.metricBtns button.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+#mapBox{width:100%;height:420px;}
+.loading{text-align:center;padding:36px 14px;color:var(--sub);font-size:13px;}
+.spin{width:26px;height:26px;border:2.5px solid var(--line);border-top-color:var(--blue);border-radius:50%;margin:0 auto 12px;animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--line);border-radius:10px;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:#2F3A4A;color:#fff;padding:8px 7px;text-align:right;font-weight:600;white-space:nowrap;position:sticky;top:0;}
+th:first-child{text-align:left;}
+td{padding:8px 7px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}
+td:first-child{text-align:left;font-weight:600;}
+tr:last-child td{border-bottom:none;}
+.num-up{color:var(--grn);} .num-dn{color:var(--red);}
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+.stat .k{font-size:11.5px;color:var(--sub);}
+.stat .v{font-size:17px;font-weight:700;margin-top:2px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12.5px;}
+.bar-row .nm{width:76px;text-align:right;color:#555;flex-shrink:0;}
+.bar-row .track{flex:1;background:#EDF0F3;border-radius:4px;height:15px;position:relative;}
+.bar-row .fill{position:absolute;top:0;height:100%;border-radius:4px;}
+.bar-row .lb{width:58px;color:#444;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.foot{font-size:11px;color:var(--sub);text-align:center;padding:16px 8px;line-height:1.7;}
+.hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.65;}
+@media(max-width:430px){ #mapBox{height:330px;} h1{font-size:17px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🌍 全球宏观经济地图</h1>
+    <span style="font-size:12px;color:var(--sub)" id="upd">加载中…</span>
+  </header>
+  <div class="meta">数据源：世界银行 · open.er-api · Wikidata ｜ 每小时自动更新 ｜ 手机随时看</div>
+
+  <div class="tabs">
+    <div class="tab on" data-s="map">🗺️ 宏观地图</div>
+    <div class="tab" data-s="fx">💱 汇率</div>
+    <div class="tab" data-s="flow">💰 资本流向</div>
+    <div class="tab" data-s="hold">🏛️ 控股关系</div>
+  </div>
+
+  <div class="sec" id="sec-map">
+    <div class="card">
+      <div class="metricBtns" id="metricBtns"></div>
+      <div id="mapBox"></div>
+      <div style="font-size:11.5px;color:var(--sub);margin-top:6px;" id="mapLegend"></div>
+    </div>
+    <h2>主要经济体指标对比</h2>
+    <div class="scroller"><table id="macroTable"></table></div>
+    <div class="hint">左右滑动查看全部指标 · 点击表头排序</div>
+  </div>
+
+  <div class="sec" id="sec-fx" style="display:none">
+    <div class="statgrid" id="fxStats"></div>
+    <div class="scroller"><table id="fxTable"></table></div>
+    <h2>汇率强弱榜（近 4 日 vs 美元）</h2>
+    <div class="card" id="fxRank"></div>
+  </div>
+
+  <div class="sec" id="sec-flow" style="display:none">
+    <div class="statgrid" id="flowStats"></div>
+    <h2>🔵 资本净流入 TOP10（外资青睐）</h2>
+    <div class="scroller"><table id="fdiIn"></table></div>
+    <h2>🔴 资本净流出 TOP10（外逃压力）</h2>
+    <div class="scroller"><table id="fdiOut"></table></div>
+    <h2>📦 贸易顺差 / 逆差 TOP</h2>
+    <div class="scroller"><table id="tradeTable"></table></div>
+  </div>
+
+  <div class="sec" id="sec-hold" style="display:none">
+    <div class="card"><div id="holdBox" style="width:100%;height:520px;"></div></div>
+    <h2>控股关系明细</h2>
+    <div class="scroller"><table id="holdTable"></table></div>
+    <div class="hint">数据来自 Wikidata：蓝＝被查公司 · 橙＝母公司/控股方 · 紫＝股东 · 箭头指向被投资方</div>
+  </div>
+
+  <div class="foot">
+    数据：世界银行公开数据（年度）· open.er-api.com（汇率）· Wikidata（控股）<br>
+    本页仅供研究参考，不构成投资建议。数据由云端每小时自动更新。
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmtMoney = v => {
+  if(v==null||isNaN(v)) return '—';
+  const a=Math.abs(v), s=v<0?'-':'';
+  if(a>=1e12) return s+(a/1e12).toFixed(2)+'万亿';
+  if(a>=1e8) return s+(a/1e8).toFixed(1)+'亿';
+  if(a>=1e4) return s+(a/1e4).toFixed(1)+'万';
+  return s+a.toFixed(0);
+};
+const fmtPct = v => (v==null||isNaN(v))?'—':(v>=0?'+':'')+Number(v).toFixed(2)+'%';
+let MACRO=null, MAPCHART=null, HOLDCHART=null, CURMETRIC='gdp';
+const METRICS=[
+  {k:'gdp',label:'GDP总量',pct:false},{k:'gdp_growth',label:'GDP增速',pct:true},
+  {k:'gdp_pc',label:'人均GDP',pct:false},{k:'cpi',label:'通胀率',pct:true},
+  {k:'unemp',label:'失业率',pct:true},{k:'exports',label:'出口',pct:false},
+  {k:'imports',label:'进口',pct:false},{k:'reserves',label:'外汇储备',pct:false},
+  {k:'fdi',label:'FDI净流入',pct:false},{k:'ca',label:'经常账户',pct:false},
+  {k:'debt',label:'债务/GDP',pct:true}
+];
+
+async function jget(u){ const r=await fetch(u); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+
+/* ---- 宏观 ---- */
+async function loadMacro(){
+  try{
+    MACRO = await jget('macro.json');
+    $('upd').textContent = '更新 ' + (MACRO.meta.updated||'—');
+    buildBtns(); renderMap(); renderTable();
+  }catch(e){
+    $('upd').textContent = '加载失败 ' + e.message;
+    $('sec-map').querySelector('.card').innerHTML = '<div class="loading">数据尚未生成，云端正在构建（首次约 60 秒）…请稍后刷新</div>';
+  }
+}
+function buildBtns(){
+  $('metricBtns').innerHTML = METRICS.map(m=>
+    `<button class="${m.k===CURMETRIC?'on':''}" onclick="setMetric('${m.k}')">${m.label}</button>`).join('');
+}
+function setMetric(k){ CURMETRIC=k; buildBtns(); renderMap(); }
+function renderMap(){
+  if(!MACRO || typeof echarts==='undefined') return;
+  const m = METRICS.find(x=>x.k===CURMETRIC);
+  const data=[];
+  Object.values(MACRO.countries).forEach(c=>{
+    const v=c[CURMETRIC];
+    if(v!=null) data.push({name:c.map, value:v, cn:c.name, year:c.year});
+  });
+  const vals = data.map(d=>d.value).filter(isFinite);
+  const maxV = vals.length?Math.max(...vals.map(Math.abs)):1;
+  if(!MAPCHART) MAPCHART = echarts.init($('mapBox'));
+  MAPCHART.setOption({
+    tooltip:{formatter:p=> !p.data ? p.name+'<br/>无数据'
+      : `<b>${p.data.cn||p.name}</b><br/>${m.label}：${m.pct?(p.data.value>=0?'+':'')+p.data.value.toFixed(2)+'%':fmtMoney(p.data.value)}<br/><span style="color:#999">${p.data.year||''}年</span>`},
+    visualMap:{min: m.pct?-Math.min(10,maxV):0, max: m.pct?Math.min(10,maxV):maxV,
+      left:8,bottom:8,text:['高','低'],calculable:true,
+      inRange:{color:['#E8F1F8','#9DC3E6','#4A90D9','#1E5C8C','#0F3352']},textStyle:{fontSize:11}},
+    series:[{type:'map',map:'world',roam:true,zoom:1.15,
+      itemStyle:{areaColor:'#EDF1F5',borderColor:'#C8D2DC',borderWidth:.5},
+      emphasis:{areaColor:'#F0B90B',label:{show:true,fontSize:10}},select:{disabled:true},data}]
+  },true);
+  $('mapLegend').textContent = `${m.label}（${m.pct?'%':'美元'}）· 覆盖 ${data.length} 个经济体`;
+}
+function renderTable(){
+  const cols=['gdp','gdp_growth','gdp_pc','cpi','unemp','exports','imports','trade_balance','fdi','ca','debt','reserves'];
+  const labels={gdp:'GDP',gdp_growth:'增速',gdp_pc:'人均',cpi:'通胀',unemp:'失业',exports:'出口',imports:'进口',trade_balance:'贸易差额',fdi:'FDI',ca:'经常账户',debt:'债务',reserves:'储备'};
+  const rows=Object.values(MACRO.countries).filter(c=>c.gdp).sort((a,b)=>b.gdp-a.gdp);
+  const cell=(k,c)=>{
+    const v=c[k];
+    if(v==null) return '<td style="color:#bbb">—</td>';
+    if(['gdp_growth','cpi','unemp','debt'].includes(k)) return `<td>${v.toFixed(1)}%</td>`;
+    const col=['trade_balance','ca','fdi'].includes(k)?(v>=0?'num-up':'num-dn'):'';
+    return `<td class="${col}">${fmtMoney(v)}</td>`;
+  };
+  $('macroTable').innerHTML =
+    '<tr><th>经济体</th>'+cols.map(k=>`<th>${labels[k]}</th>`).join('')+'</tr>'+
+    rows.map(c=>`<tr><td>${c.name}</td>`+cols.map(k=>cell(k,c)).join('')+'</tr>').join('');
+}
+
+/* ---- 汇率 ---- */
+async function loadFx(){
+  try{
+    const d = await jget('fx.json');
+    $('upd').textContent = '汇率更新 ' + (d.updated||'—');
+    const items = d.items||[];
+    const rows = items.map(it=>{
+      const c=it.chg, col=c==null?'#888':(c>0?'num-up':'num-dn');
+      return `<tr><td><b>${it.cn}</b> <span style="color:#999;font-size:11px">${it.code}</span></td>
+        <td style="color:#666">${it.country}</td>
+        <td><b>${it.rate>=100?it.rate.toFixed(2):it.rate.toFixed(4)}</b></td>
+        <td class="${col}">${c==null?'—':fmtPct(c)}</td></tr>`;
+    }).join('');
+    $('fxTable').innerHTML = '<tr><th>货币</th><th>国家</th><th>1 USD =</th><th>近4日</th></tr>'+rows;
+    const sorted = items.filter(x=>x.chg!=null).sort((a,b)=>b.chg-a.chg);
+    const bar = x=>{
+      const w=Math.min(100,Math.abs(x.chg)*40), col=x.chg>0?'var(--grn)':'var(--red)';
+      return `<div class="bar-row"><span class="nm">${x.cn}</span>
+        <div class="track"><div class="fill" style="${x.chg>0?'left:50%':'right:50%'};width:${w/2}%;background:${col}"></div></div>
+        <span class="lb" style="color:${col}">${fmtPct(x.chg)}</span></div>`;
+    };
+    $('fxRank').innerHTML = sorted.slice(0,6).map(bar).join('')+
+      '<div style="border-top:1px dashed var(--line);margin:6px 0"></div>'+sorted.slice(-6).reverse().map(bar).join('');
+    const cny = items.find(x=>x.code==='CNY');
+    const eur = items.find(x=>x.code==='EUR');
+    $('fxStats').innerHTML = `
+      <div class="stat"><div class="k">人民币 (CNY)</div><div class="v">${cny?cny.rate:'—'} <span style="font-size:12px;color:${cny&&cny.chg>0?'var(--grn)':'var(--red)'}">${cny?fmtPct(cny.chg):''}</span></div></div>
+      <div class="stat"><div class="k">欧元 (EUR)</div><div class="v">${eur?eur.rate:'—'} <span style="font-size:12px;color:${eur&&eur.chg>0?'var(--grn)':'var(--red)'}">${eur?fmtPct(eur.chg):''}</span></div></div>`;
+  }catch(e){ $('upd').textContent='汇率加载失败 '+e.message; }
+}
+
+/* ---- 资本流向 ---- */
+function renderFlow(){
+  if(!MACRO) return;
+  const cs=Object.values(MACRO.countries);
+  const fdiIn=cs.filter(c=>c.fdi!=null).sort((a,b)=>b.fdi-a.fdi).slice(0,10);
+  const fdiOut=cs.filter(c=>c.fdi!=null).sort((a,b)=>a.fdi-b.fdi).slice(0,10);
+  const trade=cs.filter(c=>c.trade_balance!=null).sort((a,b)=>b.trade_balance-a.trade_balance);
+  const top=trade.slice(0,6), bot=trade.slice(-6).reverse();
+  const totalFdi=cs.reduce((a,c)=>a+(c.fdi||0),0);
+  $('flowStats').innerHTML = `
+    <div class="stat"><div class="k">全球 FDI 净流入合计</div><div class="v">${fmtMoney(totalFdi)}</div></div>
+    <div class="stat"><div class="k">最大顺差国</div><div class="v" style="font-size:15px">${top[0]?top[0].name+' '+fmtMoney(top[0].trade_balance):'—'}</div></div>`;
+  const tbl=(arr,key,color)=>'<tr><th>#</th><th>经济体</th><th>金额</th><th>占GDP</th></tr>'+
+    arr.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name}</td><td class="${color}">${fmtMoney(c[key])}</td><td>${c.gdp?(c[key]/c.gdp*100).toFixed(1)+'%':'—'}</td></tr>`).join('');
+  $('fdiIn').innerHTML=tbl(fdiIn,'fdi','num-up');
+  $('fdiOut').innerHTML=tbl(fdiOut,'fdi','num-dn');
+  $('tradeTable').innerHTML =
+    '<tr><th>类型</th><th>经济体</th><th>贸易差额</th><th>出口</th><th>进口</th></tr>'+
+    top.map(c=>`<tr><td style="color:var(--grn)">顺差</td><td>${c.name}</td><td class="num-up">${fmtMoney(c.trade_balance)}</td><td>${fmtMoney(c.exports)}</td><td>${fmtMoney(c.imports)}</td></tr>`).join('')+
+    bot.map(c=>`<tr><td style="color:var(--red)">逆差</td><td>${c.name}</td><td class="num-dn">${fmtMoney(c.trade_balance)}</td><td>${fmtMoney(c.exports)}</td><td>${fmtMoney(c.imports)}</td></tr>`).join('');
+}
+
+/* ---- 控股 ---- */
+async function loadHoldings(){
+  try{
+    const d = await jget('holdings.json');
+    const nodes=(d.nodes||[]).map(n=>({
+      id:n.id,name:n.name,symbolSize:n.type==='company'?24:16,
+      category:n.type==='company'?0:(n.type==='parent'?1:2),
+      label:{show:true,fontSize:9,formatter:n.name}}));
+    const links=(d.links||[]).map(l=>({source:l.source,target:l.target,lineStyle:{curveness:.12}}));
+    if(typeof echarts!=='undefined'){
+      if(!HOLDCHART) HOLDCHART=echarts.init($('holdBox'));
+      HOLDCHART.setOption({
+        tooltip:{},
+        legend:[{data:['公司','母公司','股东'],bottom:0,textStyle:{fontSize:11}}],
+        series:[{type:'graph',layout:'force',roam:true,draggable:true,
+          force:{repulsion:200,edgeLength:[55,130],gravity:.12,layoutAnimation:false},
+          categories:[{name:'公司',itemStyle:{color:'#1E5C8C'}},{name:'母公司',itemStyle:{color:'#B7791F'}},{name:'股东',itemStyle:{color:'#7B5EA7'}}],
+          data:nodes,links:links,
+          lineStyle:{color:'#B9C4D0',width:1,opacity:.8},
+          emphasis:{focus:'adjacency'},
+          label:{position:'right',color:'#333'}}]
+      },true);
+    }
+    const nameOf={}; nodes.forEach(n=>nameOf[n.id]=n.name);
+    $('holdTable').innerHTML =
+      '<tr><th>投资方</th><th>被投资方</th><th>关系</th></tr>'+
+      (d.links||[]).slice(0,60).map(l=>`<tr><td><b>${nameOf[l.source]||l.source}</b></td><td>${nameOf[l.target]||l.target}</td><td style="color:#666">${l.rel}</td></tr>`).join('');
+  }catch(e){ $('holdBox').innerHTML='<div class="loading">加载失败 '+e.message+'</div>'; }
+}
+
+/* ---- tab 切换（懒加载）---- */
+const LOADED={};
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    const s=t.dataset.s;
+    document.querySelectorAll('.sec').forEach(x=>x.style.display='none');
+    $('sec-'+s).style.display='block';
+    if(s==='map'&&MAPCHART) setTimeout(()=>MAPCHART.resize(),80);
+    if(s==='hold'){ if(!LOADED.hold){LOADED.hold=1;loadHoldings();} setTimeout(()=>HOLDCHART&&HOLDCHART.resize(),80); }
+    if(s==='fx'&&!LOADED.fx){LOADED.fx=1;loadFx();}
+    if(s==='flow'&&!LOADED.flow){LOADED.flow=1;renderFlow();}
+  });
+});
+
+// ECharts 就绪后注册地图并首次渲染
+(async function init(){
+  if(typeof echarts==='undefined'){ return setTimeout(init,300); }
+  try{
+    const geo = await jget('world.json');
+    echarts.registerMap('world', geo);
+  }catch(e){ console.warn('map load fail', e); }
+  await loadMacro();
+  renderFlow();
+})();
+</script>
+</body>
+</html>
