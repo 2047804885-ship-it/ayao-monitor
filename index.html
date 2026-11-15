@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>熬鹰资本 · 币安跟单监控</title>
+<style>
+  :root{--ink:#1F2937;--sub:#5B6472;--line:#E4E7EC;--danger:#8C1F28;--blue:#1E5C8C;--bg:#F4F6F8;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;}
+  .wrap{max-width:860px;margin:0 auto;padding:16px 14px 40px;}
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+  h1{font-size:20px;color:var(--danger);}
+  .live{display:inline-block;font-size:12px;color:#fff;background:#2E6E2E;border-radius:10px;padding:1px 10px;animation:pulse 2s infinite;}
+  .live.warn{background:#B7791F;animation:none;}
+  .live.dead{background:#8C1F28;animation:none;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .statusbar{font-size:12px;color:var(--sub);margin:6px 0 14px;word-break:break-all;}
+  .statusbar .err{color:var(--danger);}
+  .statusbar .ok{color:#1E7A32;}
+  h2.t{font-size:15px;color:#fff;background:var(--danger);display:inline-block;padding:3px 12px;border-radius:6px;margin:18px 0 10px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  @media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+  .stat .k{font-size:12px;color:var(--sub);}
+  .stat .v{font-size:17px;font-weight:700;margin-top:2px;}
+  .up{color:#C0392B;} .dn{color:#1E7A32;}
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:13px;border-radius:10px;overflow:hidden;}
+  th{background:#2F3A4A;color:#fff;padding:7px 8px;text-align:left;font-weight:600;white-space:nowrap;}
+  td{border-bottom:1px solid var(--line);padding:7px 8px;white-space:nowrap;}
+  .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--line);border-radius:10px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+  .ev{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px;}
+  .ev:last-child{border-bottom:none;}
+  .ev .t{color:var(--sub);font-size:12px;min-width:78px;}
+  .badge{display:inline-block;font-size:12px;color:#fff;border-radius:4px;padding:1px 8px;margin-right:6px;}
+  .b-open{background:#C0392B;} .b-close{background:#1E7A32;}
+  .b-inc{background:#B7791F;} .b-dec{background:#5B6472;}
+  .long{color:#C0392B;font-weight:700;} .short{color:#1E7A32;font-weight:700;}
+  .empty{color:var(--sub);font-size:13px;padding:14px;text-align:center;}
+  .foot{font-size:11px;color:var(--sub);margin-top:22px;border-top:1px solid var(--line);padding-top:10px;}
+  .tip{font-size:12px;color:var(--sub);margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🦅 熬鹰资本 · 币安跟单监控</h1>
+    <span class="live" id="live">连接中…</span>
+  </header>
+  <div class="statusbar" id="status">正在连接云端数据…</div>
+
+  <h2 class="t">组合总览</h2>
+  <div class="grid" id="stats"><div class="empty">等待数据…</div></div>
+
+  <h2 class="t">收益曲线</h2>
+  <div id="curve"><div class="empty">等待数据…</div></div>
+
+  <h2 class="t">当前持仓</h2>
+  <div class="scroller" id="pos"><div class="empty">等待数据…</div></div>
+
+  <h2 class="t">交易动态（云端自动捕捉开/平/加/减仓）</h2>
+  <div class="card" id="events"><div class="empty">暂无动态。</div></div>
+
+  <h2 class="t">推送配置</h2>
+  <div class="card">
+    <div style="font-size:13px;">
+      微信推送由云端两处同时执行（GitHub Actions 定时任务），手机端接收开/平仓提醒。<br>
+      <span class="tip">本页面只做展示，不需要任何后台程序；数据由云端每 10 分钟更新一次。</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    数据来源：币安公开跟单（Copy Trading）接口，云端每 10 分钟轮询一次；仅展示公开组合数据，非实时撮合行情。<br>
+    本页面仅供参考，不构成投资建议。市场有风险，投资需谨慎。
+  </div>
+</div>
+
+<script>
+// ===== 云端数据源（多线路竞速，全部为国内可直连域名）=====
+var REPO = '2047804885-ship-it/ayao-monitor';
+var SOURCES = [
+  {n:'GitHub-API',   u:'https://api.github.com/repos/' + REPO + '/contents/snap.json', api:true},
+  {n:'jsDelivr-CF',  u:'https://testingcf.jsdelivr.net/gh/' + REPO + '@main/snap.json'},
+  {n:'jsDelivr-Fast',u:'https://fastly.jsdelivr.net/gh/' + REPO + '@main/snap.json'},
+  {n:'jsDelivr-Gcore',u:'https://gcore.jsdelivr.net/gh/' + REPO + '@main/snap.json'},
+  {n:'GitHub-Raw',   u:'https://raw.githubusercontent.com/' + REPO + '/main/snap.json'}
+];
+
+function fmt(v){ if(v===undefined||v===null||v==='') return '—';
+  if(typeof v==='number') return v.toLocaleString('zh-CN',{maximumFractionDigits:4});
+  var n=parseFloat(v); return isNaN(n)?v:n.toLocaleString('zh-CN',{maximumFractionDigits:4}); }
+function pct(v){ if(v===undefined||v===null||v==='') return '—'; var n=parseFloat(v);
+  if(isNaN(n)) return v; var s=(n>0?'+':'')+(Math.abs(n)>1000?n.toFixed(1):n.toFixed(2))+'%';
+  return '<span class="'+(n>=0?'up':'dn')+'">'+s+'</span>'; }
+function money(v){ if(v===undefined||v===null||v==='') return '—'; var n=parseFloat(v); if(isNaN(n)) return v;
+  return '<span class="'+(n>=0?'up':'dn')+'">'+(n>=0?'+':'-')+'$'+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0})+'</span>'; }
+function side(s){ s=(s||'').toUpperCase();
+  if(s.indexOf('LONG')>=0||s==='多'||s==='BUY') return '<span class="long">做多</span>';
+  if(s.indexOf('SHORT')>=0||s==='空'||s==='SELL') return '<span class="short">做空</span>'; return s||'—'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+// ===== 多源竞速加载 =====
+var lastSrcName = '', lastOkMs = 0;
+function loadSnap(){
+  return new Promise(function(resolve, reject){
+    var done = false, errs = [], pending = SOURCES.length;
+    SOURCES.forEach(function(src){
+      var ctl = ('AbortController' in window) ? new AbortController() : null;
+      var tmo = setTimeout(function(){ if(ctl) ctl.abort(); }, 9000);
+      fetch(src.u + '?t=' + Date.now(), {cache:'no-store', signal: ctl ? ctl.signal : undefined})
+        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(function(j){
+          if(src.api && j && j.content && j.encoding === 'base64'){
+            j = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g,'')))));
+          }
+          if(done) return; done = true; clearTimeout(tmo);
+          lastSrcName = src.n; lastOkMs = Date.now();
+          resolve(j);
+        })
+        .catch(function(e){
+          clearTimeout(tmo); errs.push(src.n+':'+(e.message||'err'));
+          if(--pending === 0 && !done){ done = true; reject(new Error(errs.join(' | '))); }
+        });
+    });
+  });
+}
+
+// ===== 渲染 =====
+var lastLen = -1;
+function render(d){
+  var st = document.getElementById('status');
+  var liveEl = document.getElementById('live');
+  var ageMin = 9999;
+  var lm = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(d.serverTime || '');
+  if(lm){ ageMin = (Date.now() - new Date(+lm[1], +lm[2]-1, +lm[3], +lm[4], +lm[5], +lm[6]).getTime())/60000; }
+
+  var bits = [];
+  bits.push('云端更新时间 ' + esc(d.serverTime || '—'));
+  if(ageMin < 9000){
+    var aTxt = ageMin < 1 ? '刚刚' : (ageMin < 60 ? Math.round(ageMin)+' 分钟前' : (ageMin/60).toFixed(1)+' 小时前');
+    bits.push('<span class="'+(ageMin>25?'err':'ok')+'">数据' + aTxt + '</span>');
+  }
+  bits.push('线路 ' + esc(lastSrcName));
+  if(d.lastError){ bits.push('<span class="err">云端报错: ' + esc(String(d.lastError).slice(0,120)) + '</span>'); }
+  st.innerHTML = bits.join(' ｜ ');
+
+  if(ageMin > 25){
+    liveEl.className = 'live warn';
+    liveEl.textContent = '数据延迟 ' + Math.round(ageMin) + ' 分钟';
+  } else {
+    liveEl.className = 'live';
+    liveEl.textContent = '监控中 · ' + (d.name || d.portfolioId || '熬鹰');
+  }
+
+  // 总览
+  var p = d.profile || {};
+  var cells = [
+    ['90 天收益率', p.roi==null?'—':('<span class="'+(p.roi>=0?'up':'dn')+'">'+(p.roi>0?'+':'')+p.roi.toFixed(2)+'%</span>')],
+    ['90 天盈亏(USDT)', money(p.pnl)],
+    ['管理规模 AUM', '$' + fmt(p.aum)],
+    ['保证金余额', '$' + fmt(p.marginBalance)],
+    ['胜率', p.winRate==null?'—':p.winRate.toFixed(2)+'%'],
+    ['最大回撤', p.mdd==null?'—':p.mdd.toFixed(2)+'%'],
+    ['夏普比率', fmt(p.sharpe)],
+    ['跟随者累计盈利', money(p.copierPnl)]
+  ];
+  document.getElementById('stats').innerHTML = cells.map(function(c){
+    return '<div class="stat"><div class="k">'+c[0]+'</div><div class="v">'+c[1]+'</div></div>';
+  }).join('');
+
+  // 收益曲线
+  var curve = (d.curve || []).filter(function(x){ return x && x.dataType === 'ROI'; });
+  if(curve.length > 2){
+    var W=820,H=90,P=6, vals=curve.map(function(x){return +x.value;});
+    var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rg=(mx-mn)||1;
+    var pts=vals.map(function(v,i){
+      return (P+i*(W-2*P)/(vals.length-1)).toFixed(1)+','+(H-P-(v-mn)/rg*(H-2*P)).toFixed(1);
+    }).join(' ');
+    var zeroY = H-P-(0-mn)/rg*(H-2*P);
+    var last = vals[vals.length-1];
+    var svg = '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="none" style="background:#fff;border:1px solid var(--line);border-radius:10px">'+
+      '<line x1="0" y1="'+zeroY+'" x2="'+W+'" y2="'+zeroY+'" stroke="#C9CED6" stroke-dasharray="4 4"/>'+
+      '<polyline points="'+pts+'" fill="none" stroke="'+(last>=0?'#C0392B':'#1E7A32')+'" stroke-width="2"/></svg>';
+    document.getElementById('curve').innerHTML = svg +
+      '<div style="font-size:12px;color:var(--sub);margin-top:4px;">近 90 天收益率曲线（币安公开数据）· 区间最低 ' +
+      mn.toFixed(2) + '% / 最高 ' + mx.toFixed(2) + '% · 最新 ' + last.toFixed(2) + '%</div>';
+  }
+
+  // 持仓
+  var pos = d.positions || [];
+  if(pos.length){
+    var rows = pos.map(function(x){
+      return '<tr><td><b>'+esc(x.symbol)+'</b></td><td>'+side(x.side)+'</td><td>'+fmt(x.lever)+'x</td>'+
+        '<td>'+fmt(x.qty)+'</td><td>'+fmt(x.entry)+'</td><td>'+fmt(x.mark)+'</td>'+
+        '<td>'+money(x.upnl)+'</td><td>'+pct(x.upnlPct)+'</td></tr>';
+    }).join('');
+    document.getElementById('pos').innerHTML = '<table><tr><th>币种</th><th>方向</th><th>杠杆</th><th>数量</th><th>开仓价</th><th>标记价</th><th>未实现盈亏</th><th>收益率</th></tr>'+rows+'</table>';
+  } else {
+    var msg = d.portfolioId ? '当前无持仓（空仓）' : '暂无组合数据';
+    if(p.positionShow === false) msg = '该交易员已隐藏当前持仓，币安不提供实时持仓数据；下方「交易动态」由盈亏/保证金变动推断捕捉。';
+    document.getElementById('pos').innerHTML = '<div class="empty">'+msg+'</div>';
+  }
+
+  // 动态
+  var ev = d.events || [];
+  var box = document.getElementById('events');
+  if(ev.length){
+    box.innerHTML = ev.map(function(e){
+      var cls = {'开仓':'b-open','平仓':'b-close','加仓':'b-inc','减仓':'b-dec',
+                 '最新交易':'b-open','盈亏变动':'b-inc','保证金变动':'b-dec'}[e.type] || 'b-dec';
+      var body;
+      if(e.symbol){
+        body = '<b>'+esc(e.symbol)+'</b> '+side(e.side)+(e.lever?(' '+fmt(e.lever)+'x'):'')+
+               (e.qty?(' · 数量 '+fmt(e.qty)):'')+(e.price?(' · 价 '+fmt(e.price)):'');
+      } else if(e.qty !== '' && e.qty != null){
+        body = '变化量 ' + fmt(e.qty);
+      } else {
+        body = '—';
+      }
+      return '<div class="ev"><span class="t">'+esc(e.time)+'</span>'+
+             '<span><span class="badge '+cls+'">'+esc(e.type)+'</span>'+body+'</span></div>';
+    }).join('');
+  } else {
+    box.innerHTML = '<div class="empty">暂无动态。云端每分钟检查一次，发现仓位或盈亏变化会记录在这里。</div>';
+  }
+
+  // 新事件提示音
+  if(lastLen >= 0 && ev.length > lastLen){
+    try{ var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC){ var u = new AC(); var o = u.createOscillator(); var g = u.createGain();
+        o.connect(g); g.connect(u.destination); o.frequency.value=880; g.gain.value=0.08;
+        o.start(); o.stop(u.currentTime+0.15); } }catch(e){}
+  }
+  lastLen = ev.length;
+}
+
+var failCount = 0;
+function refresh(){
+  loadSnap().then(function(d){ failCount = 0; render(d); })
+    .catch(function(e){
+      failCount++;
+      var liveEl = document.getElementById('live');
+      liveEl.className = 'live dead';
+      liveEl.textContent = '连接失败';
+      document.getElementById('status').innerHTML =
+        '<span class="err">连不上云端数据（' + failCount + ' 次）: ' + esc(e.message) + '</span>' +
+        '<br><span style="color:var(--sub)">若浏览器装了代理插件请关掉；数据本身在云端，本地不需要任何后台程序。</span>';
+    });
+}
+refresh();
+setInterval(refresh, 60000);
+</script>
+</body>
+</html>
