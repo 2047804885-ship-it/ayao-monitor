@@ -1,185 +1,218 @@
 # -*- coding: utf-8 -*-
 """
-聪明钱共识：聚合币安跟单市场高胜率带单员的实时持仓
-跑在 GitHub Actions（runner 可直连币安），输出 consensus.json
-共识定义：≥3 个「胜率≥55%、跟单人数≥50、90D ROI≥20%」的交易员
-在同一币种、同一方向上同时持仓
+聪明钱共识 v2
+数据源 1（主）：币安官方「大户持仓比」聚合数据（fapi.binance.com，runner 可直连）
+  - topLongShortPositionRatio：大户持仓量多空比（聪明钱方向）
+  - globalLongShortAccountRatio：散户账户多空比（反向指标）
+  - takerlongshortRatio：主动成交买卖比（即时动能）
+数据源 2（补充）：跟单排行榜高胜率交易员的最近成交（trade-history POST 接口）
+输出 consensus.json
 """
 import json
 import time
-import urllib.request
 import ssl
+import urllib.request
 from collections import defaultdict
 
+FAPI = 'https://fapi.binance.com/futures/data'
 BAPI = 'https://www.binance.com/bapi/futures/v1'
 EP_QLIST = BAPI + '/friendly/future/copy-trade/home-page/query-list'
-EP_POS = BAPI + '/friendly/future/copy-trade/lead-data/positions?portfolioId='
+EP_TRADE = BAPI + '/public/future/copy-trade/lead-portfolio/trade-history'
 
 UA = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0',
     'Referer': 'https://www.binance.com/',
-    'Origin': 'https://www.binance.com',
     'Content-Type': 'application/json',
     'clienttype': 'web',
 }
-
 CTX = ssl.create_default_context()
 CTX.check_hostname = False
 CTX.verify_mode = ssl.CERT_NONE
 
-# 筛选门槛：什么才算"值得跟随的交易员"
-MIN_WINRATE = 55.0
-MIN_COPIERS = 50
-MIN_ROI = 20.0
-MAX_TRADERS = 45          # 最多拉多少个交易员的持仓
-CONSENSUS_MIN = 3         # 同币同向至少几个人才算共识
+COINS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT',
+         'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'TONUSDT', 'DOTUSDT', 'LTCUSDT',
+         'NEARUSDT', 'SUIUSDT', 'APTUSDT', 'OPUSDT', 'ARBUSDT', 'PEPEUSDT',
+         'WIFUSDT', 'FILUSDT', 'INJUSDT', 'SEIUSDT', 'TIAUSDT', 'ETCUSDT',
+         'TRXUSDT', 'BCHUSDT', 'UNIUSDT', 'ATOMUSDT', 'FETUSDT', 'RNDRUSDT']
 
 
-def req(url, body=None, timeout=15):
-    data = json.dumps(body).encode() if body is not None else None
-    r = urllib.request.Request(url, data=data, headers=UA)
+def get(url, timeout=12):
+    r = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(r, timeout=timeout, context=CTX) as resp:
         return json.loads(resp.read().decode('utf-8'))
 
 
-def bj_time():
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() + 8 * 3600)) + ' 北京时间'
+def post(url, body, timeout=12):
+    r = urllib.request.Request(url, data=json.dumps(body).encode(), headers=UA)
+    with urllib.request.urlopen(r, timeout=timeout, context=CTX) as resp:
+        return json.loads(resp.read().decode('utf-8'))
 
 
-def fetch_leaderboard(pages=3):
-    """拉跟单排行榜（90D ROI 降序）"""
-    traders = []
-    for page in range(1, pages + 1):
+def f(v, d=3):
+    try:
+        return round(float(v), d)
+    except Exception:
+        return None
+
+
+def whale_signal(sym):
+    """大户 vs 散户的结构判断，返回 None 或信号 dict"""
+    try:
+        top = get('%s/topLongShortPositionRatio?symbol=%s&period=1h&limit=26' % (FAPI, sym))
+        glob = get('%s/globalLongShortAccountRatio?symbol=%s&period=1h&limit=26' % (FAPI, sym))
+        taker = get('%s/takerlongshortRatio?symbol=%s&period=1h&limit=8' % (FAPI, sym))
+    except Exception:
+        return None
+    if not isinstance(top, list) or len(top) < 25:
+        return None
+    now = top[-1]
+    prev = top[-13]   # 12 小时前
+    top_now = f(now['longShortRatio'])
+    top_prev = f(prev['longShortRatio'])
+    if top_now is None or top_prev is None:
+        return None
+    top_chg = round(top_now - top_prev, 3)
+    glob_now = f(glob[-1]['longShortRatio']) if isinstance(glob, list) and glob else None
+    tk_now = f(taker[-1]['buySellRatio']) if isinstance(taker, list) and taker else None
+
+    score = 0
+    reasons = []
+    side = None
+    # 大户绝对水平
+    if top_now >= 2.0:
+        score += 3; reasons.append('大户持仓量多空比 %.2f（重度偏多）' % top_now)
+        side = 'LONG'
+    elif top_now >= 1.5:
+        score += 2; reasons.append('大户持仓量多空比 %.2f（偏多）' % top_now)
+        side = 'LONG'
+    elif top_now <= 0.6:
+        score += 3; reasons.append('大户持仓量多空比 %.2f（重度偏空）' % top_now)
+        side = 'SHORT'
+    elif top_now <= 1.0:
+        score += 2; reasons.append('大户持仓量多空比 %.2f（偏空）' % top_now)
+        side = 'SHORT'
+    # 大户动向（12 小时变化）
+    if top_chg >= 0.25 and top_now > 1.2:
+        score += 2; reasons.append('12 小时内大户多空比上升 %+.2f，聪明钱在加多' % top_chg)
+        side = side or 'LONG'
+    elif top_chg <= -0.25 and top_now < 1.0:
+        score += 2; reasons.append('12 小时内大户多空比下降 %+.2f，聪明钱在加空' % top_chg)
+        side = side or 'SHORT'
+    # 散户反向（大户与散户背离时胜率更高）
+    if glob_now and side == 'LONG' and glob_now >= 1.8:
+        score += 2; reasons.append('散户账户多空比 %.2f 极度看多，与大户相反' % glob_now)
+    if glob_now and side == 'SHORT' and glob_now >= 1.8:
+        score += 2; reasons.append('散户账户多空比 %.2f 极度看多，大户在对手盘' % glob_now)
+    if glob_now and side == 'SHORT' and glob_now <= 0.7:
+        score += 1; reasons.append('散户账户多空比 %.2f 极度看空' % glob_now)
+    if glob_now and side == 'LONG' and glob_now <= 0.7:
+        score += 1; reasons.append('散户账户多空比 %.2f 极度看空，与大户相反' % glob_now)
+    # 主动成交
+    if tk_now:
+        if side == 'LONG' and tk_now >= 1.15:
+            score += 1; reasons.append('主动买盘占优 %.2f' % tk_now)
+        if side == 'SHORT' and tk_now <= 0.87:
+            score += 1; reasons.append('主动卖盘占优 %.2f' % tk_now)
+
+    if score < 4:
+        return None
+    return {
+        'coin': sym, 'side': side, 'score': score,
+        'topRatio': top_now, 'topChg': top_chg,
+        'globRatio': glob_now, 'taker': tk_now,
+        'reasons': reasons,
+    }
+
+
+def trader_recent_trades():
+    """排行榜高胜率交易员的最近成交（尽力而为，可能为空）"""
+    try:
+        d = post(EP_QLIST, {'pageNumber': 1, 'pageSize': 20, 'timeRange': '90D', 'dataType': 'ROI',
+                            'favoriteOnly': False, 'hideFull': False, 'nickname': '',
+                            'order': 'DESC', 'apiKeyOnly': False}, timeout=15)
+        lst = (d.get('data') or {}).get('list') or []
+    except Exception:
+        return []
+    good = [t for t in lst
+            if float(t.get('winRate') or 0) >= 55
+            and int(t.get('currentCopyCount') or 0) >= 50
+            and float(t.get('roi') or 0) >= 20]
+    good.sort(key=lambda t: -float(t.get('winRate') or 0))
+    agg = defaultdict(list)
+    got = 0
+    for t in good[:20]:
+        pid = str(t.get('leadPortfolioId') or '')
         try:
-            r = req(EP_QLIST, {
-                'pageNumber': page, 'pageSize': 20, 'timeRange': '90D',
-                'dataType': 'ROI', 'favoriteOnly': False, 'hideFull': False,
-                'nickname': '', 'order': 'DESC', 'apiKeyOnly': False,
-            })
-            lst = (r.get('data') or {}).get('list') or []
-            traders += lst
-            if not lst:
-                break
+            r = post(EP_TRADE, {'portfolioId': pid, 'timeType': '7D', 'pageNo': 1, 'pageSize': 15}, timeout=10)
+            data = r.get('data') or {}
+            tl = data.get('list') or []
         except Exception:
             continue
-    return traders
-
-
-def qualify(t):
-    try:
-        wr = float(t.get('winRate') or 0)
-        cc = int(t.get('currentCopyCount') or 0)
-        roi = float(t.get('roi') or 0)
-    except Exception:
-        return False
-    return wr >= MIN_WINRATE and cc >= MIN_COPIERS and roi >= MIN_ROI
-
-
-def fetch_positions(pid):
-    """拉单个交易员的当前持仓；隐藏持仓返回 None"""
-    try:
-        r = req(EP_POS + str(pid), timeout=12)
-        data = r.get('data')
-        if not isinstance(data, list):
-            print('DEBUG positions %s -> data is %s: %s' % (pid, type(data).__name__, str(r)[:300]))
-            return None
-        if data:
-            print('DEBUG positions %s raw[0]: %s' % (pid, json.dumps(data[0], ensure_ascii=False)[:500]))
-        return data
-    except Exception as e:
-        print('DEBUG positions %s ERR: %s' % (pid, str(e)[:200]))
-        return None
+        if not tl:
+            continue
+        got += 1
+        for x in tl[:10]:
+            sym = x.get('symbol') or ''
+            side = str(x.get('positionSide') or '').upper()
+            if side in ('BUY', 'SELL'):
+                side = 'LONG' if side == 'BUY' else 'SHORT'
+            if not sym or side not in ('LONG', 'SHORT'):
+                continue
+            agg[sym + '|' + side].append({
+                'name': t.get('nickname') or ('#' + pid[-4:]),
+                'winRate': round(float(t.get('winRate') or 0), 1),
+                'roi': round(float(t.get('roi') or 0), 1),
+                'action': x.get('orderType') or x.get('side'),
+                'price': x.get('price'),
+                'qty': x.get('qty'),
+                'time': x.get('time') or x.get('updateTime'),
+                'symbol': sym, 'side': side,
+            })
+    signals = []
+    for key, lst2 in agg.items():
+        if len(lst2) < 2:
+            continue
+        sym, side = key.split('|')
+        names = [x['name'] for x in lst2]
+        signals.append({
+            'coin': sym, 'side': side, 'count': len(set(names)),
+            'winAvg': round(sum(x['winRate'] for x in lst2) / len(lst2), 1),
+            'traders': lst2[:8],
+            'source': 'trade-history',
+        })
+    signals.sort(key=lambda s: (-s['count'], -s['winAvg']))
+    print('trade-history: %d 个交易员有成交记录' % got)
+    return signals
 
 
 def main():
     t0 = time.time()
-    board = fetch_leaderboard()
-    seen = {}
-    for t in board:
-        pid = str(t.get('leadPortfolioId') or '')
-        if pid and pid not in seen:
-            seen[pid] = t
-
-    good = []
-    for pid, t in seen.items():
-        if qualify(t):
-            good.append({
-                'pid': pid,
-                'name': t.get('nickname') or ('#' + pid[-4:]),
-                'winRate': round(float(t.get('winRate') or 0), 1),
-                'copiers': int(t.get('currentCopyCount') or 0),
-                'roi': round(float(t.get('roi') or 0), 1),
-                'pnl': t.get('pnl'),
-                'positionShow': bool(t.get('positionShow', True)),
-            })
-    good.sort(key=lambda x: -x['winRate'])
-
-    cons = defaultdict(list)
-    public_count = 0
-    for g in good[:MAX_TRADERS]:
-        pos = fetch_positions(g['pid'])
-        if pos is None:
-            g['hidden'] = True
-            continue
-        if not pos:
-            g['hidden'] = False
-            g['empty'] = True
-            continue
-        public_count += 1
-        g['hidden'] = False
-        for p in pos:
-            sym = p.get('symbol') or ''
-            side = str(p.get('positionSide') or p.get('side') or '').upper()
-            if not sym or side not in ('LONG', 'SHORT', 'BUY', 'SELL'):
-                continue
-            if side in ('BUY', 'SELL'):
-                side = 'LONG' if side == 'BUY' else 'SHORT'
-            cons[sym + '|' + side].append({
-                'name': g['name'], 'winRate': g['winRate'], 'roi': g['roi'],
-                'copiers': g['copiers'],
-                'lever': p.get('lever'),
-                'entry': p.get('entryPrice'),
-                'mark': p.get('markPrice'),
-            })
-
     signals = []
-    for key, lst in cons.items():
-        if len(lst) < CONSENSUS_MIN:
-            continue
-        sym, side = key.split('|')
-        levers = [float(x.get('lever') or 0) for x in lst if x.get('lever')]
-        entries = [float(x.get('entry') or 0) for x in lst if x.get('entry')]
-        marks = [float(x.get('mark') or 0) for x in lst if x.get('mark')]
-        signals.append({
-            'coin': sym,
-            'side': side,
-            'count': len(lst),
-            'winAvg': round(sum(x['winRate'] for x in lst) / len(lst), 1),
-            'roiAvg': round(sum(x['roi'] for x in lst) / len(lst), 1),
-            'leverAvg': round(sum(levers) / len(levers), 1) if levers else None,
-            'entryAvg': round(sum(entries) / len(entries), 6) if entries else None,
-            'markAvg': round(sum(marks) / len(marks), 6) if marks else None,
-            'traders': lst[:10],
-        })
-    signals.sort(key=lambda s: (-s['count'], -s['winAvg']))
+    ok = 0
+    for sym in COINS:
+        s = whale_signal(sym)
+        if s:
+            signals.append(s)
+            ok += 1
+    signals.sort(key=lambda s: (-s['score'], s['coin']))
+    trader_sigs = trader_recent_trades()
 
     out = {
-        'time': bj_time(),
+        'time': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() + 8 * 3600)) + ' 北京时间',
         'ts': int(time.time()),
-        'scanned': len(seen),
-        'qualified': len(good),
-        'publicPos': public_count,
-        'consensusMin': CONSENSUS_MIN,
-        'signals': signals,
-        'traders': good[:MAX_TRADERS],
+        'scanned': len(COINS),
+        'hitCount': ok,
+        'signals': signals[:15],
+        'traderSignals': trader_sigs[:10],
         'cost': round(time.time() - t0, 1),
     }
-    with open('consensus.json', 'w', encoding='utf-8') as f:
-        json.dump(out, f, ensure_ascii=False, indent=1)
-    print('consensus done: scanned=%d qualified=%d public=%d signals=%d cost=%.1fs'
-          % (len(seen), len(good), public_count, len(signals), time.time() - t0))
-    for s in signals[:6]:
-        print('  %s %s x%d 胜率均值%.1f%%' % (s['coin'], s['side'], s['count'], s['winAvg']))
+    with open('consensus.json', 'w', encoding='utf-8') as f_:
+        json.dump(out, f_, ensure_ascii=False, indent=1)
+    print('consensus done: coins=%d hit=%d traderSignals=%d cost=%.1fs'
+          % (len(COINS), ok, len(trader_sigs), time.time() - t0))
+    for s in signals[:8]:
+        print('  %s %s score=%d top=%.2f(%+.2f) glob=%s' % (
+            s['coin'], s['side'], s['score'], s['topRatio'], s['topChg'], s['globRatio']))
 
 
 if __name__ == '__main__':
