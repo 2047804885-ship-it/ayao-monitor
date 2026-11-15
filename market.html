@@ -18,7 +18,7 @@ a{color:inherit;text-decoration:none;}
 .wrap{max-width:980px;margin:0 auto;padding:0 12px;}
 
 /* 顶栏 */
-.top{position:sticky;top:0;z-index:50;background:rgba(11,14,17,.96);backdrop-filter:blur(12px);
+.top{position:sticky;top:0;z-index:50;background:#0B0E11;
   border-bottom:1px solid var(--line);padding:10px 0;}
 .topin{max-width:980px;margin:0 auto;padding:0 12px;display:flex;align-items:center;gap:10px;}
 .logo{font-size:16px;font-weight:800;letter-spacing:.3px;white-space:nowrap;}
@@ -52,10 +52,11 @@ a{color:inherit;text-decoration:none;}
 .tab.on{background:var(--warn);color:#0B0E11;border-color:var(--warn);font-weight:700;}
 
 /* 榜单 */
-.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;overflow-anchor:none;}
 .row{display:grid;grid-template-columns:1.35fr .95fr .85fr .95fr 1fr .8fr;
   gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center;
-  font-variant-numeric:tabular-nums;}
+  font-variant-numeric:tabular-nums;
+  content-visibility:auto;contain-intrinsic-size:auto 56px;}
 .row:last-child{border-bottom:none;}
 .row:active{background:var(--panel2);}
 .row.head{background:var(--panel2);color:var(--sub);font-size:11px;cursor:default;position:sticky;top:53px;z-index:20;}
@@ -84,9 +85,11 @@ a{color:inherit;text-decoration:none;}
 
 /* 详情面板 */
 .sheet{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto;
-  transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);}
-.sheet.open{transform:translateY(0);}
-.sheetbar{position:sticky;top:0;z-index:10;background:rgba(11,14,17,.97);backdrop-filter:blur(12px);
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+  will-change:transform;}
+.sheet.open{transform:translateY(0);will-change:auto;}
+.sheetbar{position:sticky;top:0;z-index:10;background:#0B0E11;
   border-bottom:1px solid var(--line);padding:11px 14px;display:flex;align-items:center;gap:10px;}
 .back{font-size:20px;line-height:1;padding:2px 8px 4px 0;cursor:pointer;color:var(--sub);}
 .sheetbar .ttl{font-size:15px;font-weight:800;}
@@ -176,7 +179,7 @@ a{color:inherit;text-decoration:none;}
     <div class="c"><div class="k">合约总数</div><div class="v" id="m-count">—</div></div>
     <div class="c"><div class="k">上涨 / 下跌</div><div class="v" id="m-ud">—</div></div>
     <div class="c"><div class="k">24h 总成交额</div><div class="v" id="m-vol">—</div></div>
-    <div class="c"><div class="k">数据时间</div><div class="v" id="m-time" style="font-size:13px;">—</div></div>
+    <div class="c"><div class="k">实时状态</div><div class="v" id="m-time" style="font-size:13px;">连接中…</div></div>
   </div>
 
   <div class="tools">
@@ -333,12 +336,12 @@ function cluster(levels, tol=0.008){
 }
 
 /* ================= 全市场列表 ================= */
-let ALL=[], FILTER='vol', SCAN=null, SCANMAP={};
+let ALL=[], BYC={}, FILTER='vol', SCAN=null, SCANMAP={};
 
 function chgCls(v){ return v>0?'up':(v<0?'down':'flat'); }
 
 async function loadMarket(force){
-  let t = force ? null : store.get('gtk', 45000);
+  let t = force ? null : store.get('gtk', 30000);
   if(!t){ t = await J(API+'/tickers', 20000); store.set('gtk', t); }
   ALL = t.map(x=>{
     const last=+x.last||+x.mark_price||0;
@@ -351,15 +354,26 @@ async function loadMarket(force){
       oi:+x.total_size||0
     };
   }).filter(x=>x.last>0);
+  BYC = {};
+  ALL.forEach(x=>BYC[x.c]=x);
 
+  updateMktBar();
+  render();
+}
+
+function updateMktBar(){
   const up=ALL.filter(x=>x.chg>0).length, dn=ALL.filter(x=>x.chg<0).length;
   const tv=ALL.reduce((a,b)=>a+b.vol,0);
   $('m-count').textContent = ALL.length;
   $('m-ud').innerHTML = '<span class="up">'+up+'</span> / <span class="down">'+dn+'</span>';
   $('m-vol').textContent = '$'+bigNum(tv);
-  $('m-time').textContent = new Date().toLocaleTimeString('zh-CN',{hour12:false});
   $('n-ct').textContent = ALL.length;
-  render();
+}
+
+function setLive(txt, color){
+  const el=$('m-time');
+  if(!el) return;
+  el.innerHTML = color ? '<span style="color:'+color+'">'+txt+'</span>' : txt;
 }
 
 function render(){
@@ -394,7 +408,7 @@ function render(){
     const s = SCANMAP[x.c];
     let tagHtml = '';
     if(s) tagHtml = '<span class="tag '+(s.score>0?'t-hot':'t-cool')+'">'+(s.score>0?'多':'空')+Math.abs(s.score)+'</span>';
-    return '<div class="row" onclick="openCoin(\''+x.c+'\')">'+
+    return '<div class="row" data-c="'+x.c+'" onclick="openCoin(\''+x.c+'\')">'+
       '<div class="sym">'+x.sym+'<i>'+x.c+'</i></div>'+
       '<div class="num">'+pxFmt(x.last)+'</div>'+
       '<div class="num '+chgCls(x.chg)+'">'+sgn(x.chg)+'%</div>'+
@@ -405,6 +419,133 @@ function render(){
   }).join('');
 
   $('list').innerHTML = head + rows;
+  VISIBLE = arr.map(x=>x.c);
+  syncSubs();
+}
+
+/* ================= 实时推送（WebSocket） ================= */
+const WSURL = 'wss://fx-ws.gateio.ws/v4/ws/usdt';
+let ws=null, wsReady=false, wsSub=new Set(), wsPing=null, wsRetry=0;
+let VISIBLE=[], DIRTY=new Set(), paintTimer=null, CURC4=null;
+
+function wsSend(obj){
+  if(!wsReady || !ws) return;
+  try{ ws.send(JSON.stringify(Object.assign({time:Math.floor(Date.now()/1000)}, obj))); }catch(e){}
+}
+
+function startPing(){
+  stopPing();
+  wsPing = setInterval(()=>wsSend({channel:'futures.ping'}), 20000);
+}
+function stopPing(){ if(wsPing){ clearInterval(wsPing); wsPing=null; } }
+
+function wsConnect(){
+  try{ ws = new WebSocket(WSURL); }catch(e){ return scheduleReconnect(); }
+  ws.onopen = ()=>{
+    wsReady = true; wsRetry = 0;
+    setLive('● 实时推送中', 'var(--down)');
+    wsSub.clear(); syncSubs(); startPing();
+  };
+  ws.onmessage = (e)=>{
+    // 关键性能优化：不逐条处理，先入队，200ms 批量合并处理一次
+    msgQueue.push(e.data);
+    if(msgQueue.length > 400) msgQueue.splice(0, msgQueue.length - 400);
+    if(!flushTimer) flushTimer = setTimeout(flushMsgs, 200);
+  };
+  ws.onclose = ()=>{
+    wsReady = false; stopPing();
+    setLive('○ 重连中…', 'var(--warn)');
+    scheduleReconnect();
+  };
+  ws.onerror = ()=>{};
+}
+
+let msgQueue = [], flushTimer = null;
+function flushMsgs(){
+  flushTimer = null;
+  const q = msgQueue; msgQueue = [];
+  const done = new Set();
+  // 倒序遍历：每个合约只取最新一条，跳过中间的旧值
+  for(let i = q.length-1; i >= 0; i--){
+    let d; try{ d = JSON.parse(q[i]); }catch(_){ continue; }
+    if(d.channel==='futures.tickers' && Array.isArray(d.result)){
+      for(const t of d.result){
+        if(done.has(t.contract)) continue;
+        done.add(t.contract);
+        applyTicker(t);
+      }
+    }
+  }
+  if(done.size) schedulePaint();
+}
+
+function scheduleReconnect(){
+  wsRetry = Math.min(wsRetry+1, 6);
+  setTimeout(wsConnect, Math.min(1000*Math.pow(1.6, wsRetry), 20000));
+}
+
+/* 需要的订阅集合：详情页只订当前币；列表页只订可见的前 18 个（控制推送量，保证手机流畅） */
+function wantSubs(){
+  const sheetOpen = document.getElementById('sheet').classList.contains('open');
+  if(sheetOpen) return new Set(CUR ? [CUR] : []);
+  return new Set(VISIBLE.slice(0, 18));
+}
+
+function syncSubs(){
+  if(!wsReady) return;
+  const want = wantSubs();
+  const add = [...want].filter(c=>!wsSub.has(c));
+  const del = [...wsSub].filter(c=>!want.has(c));
+  if(del.length) wsSend({channel:'futures.tickers', event:'unsubscribe', payload:del});
+  if(add.length){
+    for(let i=0;i<add.length;i+=40){
+      wsSend({channel:'futures.tickers', event:'subscribe', payload:add.slice(i,i+40)});
+    }
+  }
+  wsSub = want;
+}
+
+function applyTicker(t){
+  const x = BYC[t.contract];
+  if(!x) return;
+  const last = +t.last;
+  if(last>0) x.last = last;
+  if(t.change_percentage!=null) x.chg = +t.change_percentage;
+  const v = +t.volume_24h_quote || +t.volume_24h_settle;
+  if(v>0) x.vol = v;
+  if(t.funding_rate!=null) x.fund = +t.funding_rate;
+  if(t.mark_price) x.mark = +t.mark_price;
+  if(t.total_size) x.oi = +t.total_size;
+  DIRTY.add(t.contract);
+}
+
+/* 合并节流：最多每 500ms 刷一次 DOM，避免高频重绘 */
+function schedulePaint(){
+  if(paintTimer) return;
+  paintTimer = setTimeout(()=>{
+    paintTimer = null;
+    const keys = [...DIRTY]; DIRTY.clear();
+    keys.forEach(c=>{
+      const x = BYC[c]; if(!x) return;
+      const row = document.querySelector('.row[data-c="'+c+'"]');
+      if(row){
+        const cs = row.children;
+        if(cs.length>=6){
+          cs[1].textContent = pxFmt(x.last);
+          cs[2].textContent = sgn(x.chg)+'%';
+          cs[2].className = 'num '+chgCls(x.chg);
+          cs[3].textContent = '$'+bigNum(x.vol);
+          cs[4].textContent = (x.fund*100).toFixed(4)+'%';
+          cs[4].className = 'num h4 '+(Math.abs(x.fund)>0.0005?(x.fund>0?'up':'down'):'flat');
+        }
+      }
+      // 详情页实时刷新价格
+      if(CUR === c){
+        $('s-px').textContent = pxFmt(x.last);
+        $('s-chg').innerHTML = '<span class="'+chgCls(x.chg)+'">'+sgn(x.chg)+'%</span>';
+      }
+    });
+  }, 500);
 }
 
 /* ================= 扫描信号 ================= */
@@ -501,6 +642,7 @@ function analyzeCrowd(st){
 let CUR=null;
 function closeSheet(){
   $('sheet').classList.remove('open'); document.body.style.overflow='';
+  CUR = null; syncSubs();
   if(location.hash) history.replaceState(null,'',location.pathname+location.search);
 }
 
@@ -515,6 +657,7 @@ async function openCoin(contract, noHash){
   $('sheet').classList.add('open');
   document.body.style.overflow='hidden';
   $('sheet').scrollTop=0;
+  syncSubs();   // 订阅该币种实时行情
 
   try{
     const [c4, c1, st, cts, fh] = await Promise.all([
@@ -690,27 +833,28 @@ function renderDetail(meta, c4, c1, st, cts, fh){
 
 /* ---- 交易计划 ---- */
 function buildPlan(price, atrV, R1,R2,S1,S2, e25v, preferLong, fund, oiRatio){
-  const a = atrV||price*0.01;
-  // 做多：优先回踩 EMA25 或 S1 上方
-  let lEntry = Math.min(price, Math.max(e25v||price, S1 + a*0.3));
-  if(lEntry > price*1.005) lEntry = price;
-  let lSL = Math.min(S1 - a*0.25, lEntry - a*1.2);
-  if(lSL >= lEntry) lSL = lEntry - a*1.2;
-  const lTP1 = Math.max(R1, lEntry + a*1.5);
-  const lTP2 = Math.max(R2, lEntry + a*3);
-  const lRR = Math.abs(lTP1-lEntry)/Math.max(Math.abs(lEntry-lSL), 1e-9);
+  const a = atrV || price*0.01;
+  // 风险距离限制在 0.8~2.5 倍 ATR：太近易被插针扫掉，太远盈亏比不划算
+  const clampRisk = d => Math.max(0.8*a, Math.min(d, 2.5*a));
 
-  // 做空
-  let sEntry = Math.max(price, Math.min(e25v||price, R1 - a*0.3));
-  if(sEntry < price*0.995) sEntry = price;
-  let sSL = Math.max(R1 + a*0.25, sEntry + a*1.2);
-  if(sSL <= sEntry) sSL = sEntry + a*1.2;
-  const sTP1 = Math.min(S1, sEntry - a*1.5);
-  const sTP2 = Math.min(S2, sEntry - a*3);
-  const sRR = Math.abs(sEntry-sTP1)/Math.max(Math.abs(sSL-sEntry), 1e-9);
+  // 做多：市价入场，止损放在最近支撑下方但不超过 2.5 ATR；止盈按盈亏比≥1.8反推
+  const lEntry = price;
+  const lRisk = clampRisk(lEntry - (S1 - a*0.25));
+  const lSL = lEntry - lRisk;
+  const lTP1 = Math.max(R1, lEntry + 1.8*lRisk);
+  const lTP2 = Math.max(R2, lEntry + 3.2*lRisk);
+  const lRR = (lTP1 - lEntry) / lRisk;
 
-  const long = {name:'做多', long:true, entry:lEntry, sl:lSL, tp1:lTP1, tp2:lTP2, rr:lRR};
-  const short = {name:'做空', long:false, entry:sEntry, sl:sSL, tp1:sTP1, tp2:sTP2, rr:sRR};
+  // 做空：对称逻辑
+  const sEntry = price;
+  const sRisk = clampRisk((R1 + a*0.25) - sEntry);
+  const sSL = sEntry + sRisk;
+  const sTP1 = Math.min(S1, sEntry - 1.8*sRisk);
+  const sTP2 = Math.min(S2, sEntry - 3.2*sRisk);
+  const sRR = (sEntry - sTP1) / sRisk;
+
+  const long  = {name:'做多', long:true,  entry:lEntry, sl:lSL, tp1:lTP1, tp2:lTP2, rr:lRR, riskPct:lRisk/price*100};
+  const short = {name:'做空', long:false, entry:sEntry, sl:sSL, tp1:sTP1, tp2:sTP2, rr:sRR, riskPct:sRisk/price*100};
   return preferLong ? [long, short] : [short, long];
 }
 
@@ -899,12 +1043,15 @@ $('q').oninput = ()=>{ if(FILTER==='sig'){ FILTER='vol'; document.querySelectorA
 $('scan').onclick = scanSignals;
 
 // 初始化
+let lastCalib = Date.now();
 (async()=>{
   try{ await loadMarket(false); }
   catch(e){
     $('list').innerHTML='<div class="err">行情加载失败：'+e.message+'<br><br>请检查网络（需能访问 api.gateio.ws）后刷新页面</div>';
+    setLive('● 离线', 'var(--up)');
     return;
   }
+  wsConnect();   // 启动实时推送
   // 支持 #BTC_USDT 直达详情（可分享链接）
   const h = decodeURIComponent(location.hash.replace('#','')).trim().toUpperCase();
   if(h && (h.includes('_USDT') || ALL.some(x=>x.sym===h))){
@@ -912,7 +1059,24 @@ $('scan').onclick = scanSignals;
     setTimeout(()=>openCoin(c, true), 100);
   }
 })();
-setInterval(()=>{ if(!document.getElementById('sheet').classList.contains('open')) loadMarket(true).catch(()=>{}); }, 60000);
+
+// 兜底：WS 断线时 15 秒轮询；在线时每 5 分钟校准一次全量（补齐 WS 未覆盖的合约）
+setInterval(()=>{
+  if(!wsReady){
+    loadMarket(true).catch(()=>{});
+  } else if(Date.now()-lastCalib > 300000){
+    lastCalib = Date.now();
+    loadMarket(true).catch(()=>{});
+  }
+}, 15000);
+
+// 页面重新可见时立即重连/校准（手机切后台会断开 WS）
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible'){
+    if(!wsReady) wsConnect();
+    if(Date.now()-lastCalib > 60000){ lastCalib=Date.now(); loadMarket(true).catch(()=>{}); }
+  }
+});
 </script>
 </body>
 </html>
