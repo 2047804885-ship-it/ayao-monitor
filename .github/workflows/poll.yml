@@ -33,6 +33,8 @@ jobs:
         run: timeout 200 python poll_market.py || echo "market poll failed, continue"
       - name: Probe trade API
         run: timeout 90 python probe_trade.py || echo "probe failed, continue"
+      - name: Probe detail
+        run: timeout 90 python probe4.py || echo "probe failed"
       - name: Commit snapshot
         run: |
           git config user.name "ayao-bot"
