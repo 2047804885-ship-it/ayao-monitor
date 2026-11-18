@@ -46,6 +46,51 @@ tr:last-child td{border-bottom:none;}
 .foot{font-size:11px;color:var(--sub);text-align:center;padding:16px 8px;line-height:1.7;}
 .hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.65;}
 @media(max-width:430px){ #mapBox{height:330px;} h1{font-size:17px;} }
+
+/* ===== 指标科普 ===== */
+.eduTop{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin-bottom:12px;}
+.eduTop h3{font-size:13.5px;color:var(--blue);margin-bottom:7px;}
+.eduTop ol{margin:0 0 0 17px;font-size:12.5px;color:#374151;line-height:1.72;}
+.eduTop ol li{margin-bottom:5px;}
+.eduTop ol li:last-child{margin-bottom:0;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.chip{padding:6px 11px;border:1px solid var(--line);background:#fff;border-radius:20px;font-size:12px;color:var(--sub);cursor:pointer;font-weight:600;}
+.chip.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.edu{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:12px;scroll-margin-top:10px;}
+.edu-hd{display:flex;gap:9px;align-items:flex-start;margin-bottom:8px;}
+.edu-ico{font-size:20px;line-height:1.15;flex-shrink:0;}
+.edu-t{font-size:15px;font-weight:700;color:var(--ink);}
+.edu-tag{display:inline-block;font-size:10.5px;background:#EAF2F8;color:var(--blue);border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:600;vertical-align:2px;white-space:nowrap;}
+.edu-def{font-size:13px;color:#374151;line-height:1.72;margin-bottom:7px;}
+.edu-calc{font-size:11.5px;color:var(--sub);line-height:1.62;margin-bottom:10px;padding-left:8px;border-left:2px solid var(--line);}
+.bands{display:flex;gap:3px;margin-bottom:4px;}
+.band{flex:1 1 0;min-width:0;text-align:center;font-size:9.5px;padding:5px 1px;color:#fff;font-weight:600;border-radius:3px;line-height:1.3;letter-spacing:-.2px;word-break:break-all;overflow-wrap:anywhere;}
+.bands-lb{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-bottom:11px;}
+.edu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+@media(max-width:560px){.edu-grid{grid-template-columns:1fr;}}
+.ec{border-radius:9px;padding:9px 10px;font-size:12px;line-height:1.68;}
+.ec.hi{background:#FDF3F1;border:1px solid #F5D5CE;}
+.ec.lo{background:#F0F6FB;border:1px solid #D6E4F0;}
+.ec.neu{background:#F7F8FA;border:1px solid var(--line);}
+.ec h4{font-size:12px;margin-bottom:5px;}
+.ec.hi h4{color:var(--red);} .ec.lo h4{color:var(--blue);} .ec.neu h4{color:#2F3A4A;}
+.ec p{margin-bottom:5px;color:#3A4450;} .ec p:last-child{margin-bottom:0;}
+.ec b{color:#111827;}
+.edu-note{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px 10px;font-size:11.5px;color:#78350F;line-height:1.68;}
+.edu-note b{color:#92400E;}
+.live{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;}
+.live i{font-style:normal;font-size:11px;background:#F4F6F8;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:#4B5563;font-variant-numeric:tabular-nums;}
+.live i b{color:var(--ink);}
+.combo td{white-space:normal;text-align:left;}
+.combo th{white-space:normal;}
+.combo td:first-child,.combo td:nth-child(2){white-space:nowrap;}
+.combo td:first-child{font-weight:600;}
+.combo .st{font-weight:700;}
+@media(max-width:560px){
+  .combo{font-size:11.5px;}
+  .combo th,.combo td{padding:7px 5px;}
+  .band{font-size:9px;letter-spacing:-.4px;}
+}
 </style>
 </head>
 <body>
@@ -61,6 +106,7 @@ tr:last-child td{border-bottom:none;}
     <div class="tab" data-s="fx">💱 汇率</div>
     <div class="tab" data-s="flow">💰 资本流向</div>
     <div class="tab" data-s="hold">🏛️ 控股关系</div>
+    <div class="tab" data-s="edu">📖 指标科普</div>
   </div>
 
   <div class="sec" id="sec-map">
@@ -98,6 +144,25 @@ tr:last-child td{border-bottom:none;}
     <div class="hint">数据来自 Wikidata：蓝＝被查公司 · 橙＝母公司/控股方 · 紫＝股东 · 箭头指向被投资方</div>
   </div>
 
+  <div class="sec" id="sec-edu" style="display:none">
+    <div class="eduTop">
+      <h3>📖 怎么读这些指标（先看这三条）</h3>
+      <ol>
+        <li><b>没有绝对好坏，只有“合不合适”。</b>同一组数字，放在不同发展阶段、不同经济结构的国家身上，结论可能完全相反。发展中国家 6% 的增速正常，发达国家 2% 就算不错。</li>
+        <li><b>单看一个指标会骗人，必须组合看。</b>高通胀 + 高失业＝滞胀（最难熬）；高增长 + 高负债＝泡沫式繁荣（隐患在后）。后面有“指标组合速查表”。</li>
+        <li><b>看趋势比看绝对值重要。</b>一个从 2% 涨到 6% 的通胀率，比一个长期稳定在 6% 的通胀率危险得多——前者说明“预期”在失控。</li>
+      </ol>
+    </div>
+
+    <h2>指标组合速查表</h2>
+    <div class="scroller" style="margin-bottom:12px"><table class="combo" id="comboTable"></table></div>
+
+    <h2>逐个指标看懂（含义 · 高低 · 影响）</h2>
+    <div class="chips" id="eduChips"></div>
+    <div id="eduList"></div>
+    <div class="hint" style="margin-top:4px">以上分档为国际机构常用参考区间（世行 / IMF / 欧盟标准），仅作理解标尺，不是绝对界限。当前值取自世界银行最新年度数据。</div>
+  </div>
+
   <div class="foot">
     数据：世界银行公开数据（年度）· open.er-api.com（汇率）· Wikidata（控股）<br>
     本页仅供研究参考，不构成投资建议。数据由云端每小时自动更新。
@@ -132,7 +197,8 @@ async function loadMacro(){
   try{
     MACRO = await jget('macro.json');
     $('upd').textContent = '更新 ' + (MACRO.meta.updated||'—');
-    buildBtns(); renderMap(); renderTable();
+    buildBtns(); renderTable();
+    try{ renderMap(); }catch(err){ console.warn('map render fail', err); }
   }catch(e){
     $('upd').textContent = '加载失败 ' + e.message;
     $('sec-map').querySelector('.card').innerHTML = '<div class="loading">数据尚未生成，云端正在构建（首次约 60 秒）…请稍后刷新</div>';
@@ -142,7 +208,7 @@ function buildBtns(){
   $('metricBtns').innerHTML = METRICS.map(m=>
     `<button class="${m.k===CURMETRIC?'on':''}" onclick="setMetric('${m.k}')">${m.label}</button>`).join('');
 }
-function setMetric(k){ CURMETRIC=k; buildBtns(); renderMap(); }
+function setMetric(k){ CURMETRIC=k; buildBtns(); try{renderMap();}catch(e){ console.warn(e); } }
 function renderMap(){
   if(!MACRO || typeof echarts==='undefined') return;
   const m = METRICS.find(x=>x.k===CURMETRIC);
@@ -265,6 +331,172 @@ async function loadHoldings(){
   }catch(e){ $('holdBox').innerHTML='<div class="loading">加载失败 '+e.message+'</div>'; }
 }
 
+/* ================= 指标科普 ================= */
+const COMBO=[
+  ['高增长','低通胀','金发女孩（最理想）','好找工作、工资在涨、资产在涨，是加杠杆买房买股的好时候','#1E7A32'],
+  ['高增长','高通胀','过热','短期繁荣，但加息在路上；别追高，别背浮动利率的债','#B7791F'],
+  ['低增长','高通胀','滞胀（最难熬）','工资不涨物价涨，股债双杀；现金为王，减少负债','#B03A2E'],
+  ['低增长','低通胀/通缩','衰退或萧条','保住工作最重要，别负债；等降息信号，但别急着抄底','#6B7C93'],
+  ['高增长','高负债+资产泡沫','泡沫式繁荣','看着热闹，隐患在后；警惕“这次不一样”的说法','#C0562E']
+];
+
+const EDU=[
+{k:'gdp',ico:'🏔️',name:'GDP 总量',tag:'经济“块头”',stress:false,fmt:'money',
+ def:'一个国家或地区在一年内生产的所有最终商品与服务的市场价值总和。它衡量的是<b>经济体量</b>——经济有多大，而不是人民有多富。',
+ calc:'世界银行现价美元（名义值）。是“流量”不是“存量”，跨年比较会受汇率波动干扰：本币贬值会让美元GDP凭空缩水。',
+ bands:[{t:'＜1,000亿<br>小型',c:'#C9D6E2'},{t:'1,000亿–1万亿<br>中型',c:'#9DC3E6'},{t:'1–10万亿<br>大型',c:'#4A90D9'},{t:'＞10万亿<br>巨型',c:'#0F3352'}],
+ hi:'<p><b>国家层面</b>：国际议价权与规则话语权强；军费、科研、产业补贴都有腾挪空间；本币和国债更容易被全球当成“避险资产”，借债成本低；抗外部冲击能力强，一次危机不容易伤筋动骨。</p><p><b>个人层面</b>：行业齐全、岗位多，跳槽有选择；工资水平和创业市场更大；房产、股票等资产流动性好，容易变现。</p>',
+ lo:'<p><b>国家层面</b>：财政和货币政策回旋余地小，一次外部冲击就可能演变成危机；产业单一，谈判桌上没底气；在国际组织里基本是规则的接受者。</p><p><b>个人层面</b>：就业集中在少数行业，收入天花板低；大宗商品涨价或外需下滑会直接冲击生计；专业人才往往只能外流。</p>',
+ note:'GDP 大 ≠ 富裕。印度GDP是瑞士的十几倍，但瑞士人均是印度的二十多倍。判断生活水平要看<b>人均GDP</b>，跨国比较最好用<b>购买力平价（PPP）</b>，否则物价差异会严重扭曲结论。'},
+
+{k:'gdp_growth',ico:'📈',name:'GDP 增速',tag:'经济“体温”',stress:true,fmt:'pct',
+ def:'剔除物价因素后的<b>实际</b>GDP同比增速，反映经济是在扩张还是收缩。这是判断经济冷热最直接的一个数。',
+ calc:'实际增速（不变价），已扣除通胀。名义增速＝实际增速＋通胀，两者差得远时说明是物价在“假装增长”。',
+ bands:[{t:'＜0%<br>衰退',c:'#6B7C93'},{t:'0–2%<br>停滞',c:'#B7791F'},{t:'2–4%<br>温和',c:'#1E7A32'},{t:'4–6%<br>较快',c:'#2E8B57'},{t:'＞6%<br>高速/过热',c:'#C0562E'}],
+ hi:'<p><b>国家层面</b>：就业改善、财政收入增长；债务/GDP 的分母变大，会“自动稀释”存量债务；外资更愿意进来。</p><p><b>个人层面</b>：找工作容易，加薪机会多，创业成功率高；房产和股票大概率上涨；但过热时物价和房租也涨得快，工资涨幅可能追不上。</p>',
+ lo:'<p><b>国家层面</b>：失业上升、税基萎缩，债务率被动攀升；容易陷入“债务—通缩”螺旋；央行只能降息甚至量化宽松，但可能推绳子（推不动）。</p><p><b>个人层面</b>：裁员降薪风险上升，年轻人首当其冲（企业先不招新人）；工资停滞但账单照付；资产缩水，有房贷的人压力最大。</p>',
+ note:'增速高不等于健康。靠基建和债务堆出来的高增速，后面要还。要看<b>增长质量</b>：消费贡献多少、投资贡献多少、有没有推高杠杆、投资回报率（ICOR）是不是在恶化。'},
+
+{k:'gdp_pc',ico:'💰',name:'人均 GDP',tag:'平均富裕度',stress:false,fmt:'money',
+ def:'GDP ÷ 人口。粗略衡量“平均每个人一年创造多少产出”，比GDP总量更贴近日常生活。',
+ calc:'现价美元。世界银行收入分组（2023财年）：低收入＜1,136；中低 1,136–4,465；中高 4,465–13,845；高收入＞13,845。',
+ bands:[{t:'＜1千<br>低收入',c:'#C9D6E2'},{t:'1–4千<br>中低',c:'#9DC3E6'},{t:'4千–1.3万<br>中高',c:'#4A90D9'},{t:'1.3万–4万<br>高收入',c:'#1E5C8C'},{t:'＞4万<br>发达',c:'#0F3352'}],
+ hi:'<p><b>国家层面</b>：税基厚，社保、医疗、教育投入充足；经济以消费为主导，内需稳；抗冲击能力强，福利制度撑得住。</p><p><b>个人层面</b>：平均工资高，公共服务好；有余钱做投资和保险；消费选择多，进口商品买得起；教育和医疗基本不用自掏腰包。</p>',
+ lo:'<p><b>国家层面</b>：财政依赖少数资源或外援；容易卡在“中等收入陷阱”——劳动力成本上去了但产业没升级；产业政策空间小。</p><p><b>个人层面</b>：收入大头花在食品和住房（恩格尔系数高）；被迫高储蓄以防病防老；教育和医疗自付比例大，一场大病可能返贫。</p>',
+ note:'人均是<b>平均数</b>，不是中位数。贫富差距大时，“人均很高”和“多数人并不富裕”可以同时成立——海湾产油国最典型。看收入分配要配<b>基尼系数</b>。'},
+
+{k:'cpi',ico:'🔥',name:'通胀率（CPI）',tag:'钱的缩水速度',stress:true,fmt:'pct',
+ def:'居民消费价格指数同比涨幅，衡量一篮子日常商品与服务（食品、住房、交通、医疗、教育等）的价格变化。它直接决定你手里的钱“还能买多少东西”。',
+ calc:'同比（YoY）百分比。<b>核心CPI</b>剔除波动大的食品和能源，看趋势更准；多数央行把 2% 作为目标，因为轻微通胀比零通胀更健康（给降息留空间、避免通缩陷阱）。',
+ bands:[{t:'＜0%<br>通缩',c:'#6B7C93'},{t:'0–2%<br>理想',c:'#1E7A32'},{t:'2–4%<br>温和偏高',c:'#B7791F'},{t:'4–10%<br>高通胀',c:'#C0562E'},{t:'＞10%<br>恶性边缘',c:'#B03A2E'}],
+ hi:'<p><b>国家层面</b>：央行被迫加息，融资成本上升，投资和消费被压；本币贬值压力大，资本外流；民众实际购买力下降，容易引发社会不满；一旦形成“工资—物价螺旋”就很难停下来。</p><p><b>个人层面</b>：现金和存款在缩水，“钱不值钱”；食品能源支出占比被动上升，挤压其他消费；工资谈判通常滞后于物价，<b>实际工资下降</b>；<b>固定利率的房贷反而受益</b>（债务被通胀稀释）；房产、黄金、大宗商品等实物资产相对抗通胀。</p>',
+ lo:'<p><b>国家层面</b>：企业收入下降但债务名义值不变，实际债务负担反而加重（费雪的“债务—通缩”理论）；消费者推迟购买等更便宜，需求进一步萎缩；央行降息空间受“零利率下限”限制，可能掉进流动性陷阱——日本“失去的三十年”就是标本。</p><p><b>个人层面</b>：表面看钱更值钱了，但工资停滞、失业风险上升；房产和股票下跌；<b>负债者最惨</b>，越还越重；年轻人就业机会被压缩。</p>',
+ note:'CPI ≠ “你感受到的物价”。它是一篮子加权平均，你的消费结构不同，感受能差很远（不抽烟的人感受不到烟涨价，租房的年轻人体感远高于CPI）。另一个关键：多数国家CPI<b>只算房租不算房价</b>，所以“房价涨疯了但CPI很低”很常见。'},
+
+{k:'unemp',ico:'🧑‍💼',name:'失业率',tag:'就业市场松紧',stress:true,fmt:'pct',
+ def:'失业人口 ÷ 劳动力人口。只统计“正在找工作但没工作”的人，<b>不包括已经放弃找工作的人</b>——这是它最大的盲区。',
+ calc:'ILO 口径。美国的 U3（官方失业率）和 U6（含灰心劳动者、兼职不足者）差别很大；欧洲多用月度劳动力调查。',
+ bands:[{t:'＜4%<br>充分就业',c:'#1E7A32'},{t:'4–6%<br>正常',c:'#2E8B57'},{t:'6–10%<br>偏高',c:'#B7791F'},{t:'＞10%<br>严重',c:'#B03A2E'}],
+ hi:'<p><b>国家层面</b>：社保与救济支出增加、税基缩小、消费萎缩；社会稳定性下降；央行倾向宽松，财政赤字扩大。</p><p><b>个人层面</b>：收入中断，技能随空窗期贬值；长期失业者有“<b>疤痕效应</b>”，越久越难再就业；年轻人失业会压低一辈子的收入曲线（研究显示毕业即失业的人十年后收入仍偏低）。</p>',
+ lo:'<p><b>国家层面</b>：劳动力紧张，工资上涨推高通胀（菲利普斯曲线）；企业招工难，产能扩张受限。</p><p><b>个人层面</b>：好找工作，议价能力强，敢跳槽；但也要警惕“低失业率”是<b>劳动参与率下降</b>造成的假象——人不是找到工作了，而是退出劳动力市场了。</p>',
+ note:'失业率低不代表就业好。必须一起看<b>劳动参与率</b>和<b>兼职/零工占比</b>。日本失业率常年2.5%左右，但非正规雇佣比例接近四成，很多人的收入并不稳定。'},
+
+{k:'debt',ico:'🏛️',name:'政府债务 / GDP',tag:'财政杠杆',stress:true,fmt:'pct',
+ def:'政府未偿债务余额 ÷ 当年GDP。衡量财政“欠账”相对于经济体量有多大，是判断一国财政是否危险的核心指标。',
+ calc:'一般政府债务（中央＋地方）。欧盟《马斯特里赫特条约》的 60% 是国际最常用的警戒线参考。',
+ bands:[{t:'＜60%<br>稳健',c:'#1E7A32'},{t:'60–90%<br>偏高',c:'#B7791F'},{t:'90–120%<br>高',c:'#C0562E'},{t:'＞120%<br>很高',c:'#B03A2E'}],
+ hi:'<p><b>国家层面</b>：利息支出挤占教育、医疗、基建；评级下调→融资成本进一步上升（恶性循环）；真出危机时已经没有财政空间；可能被迫紧缩（越紧缩越衰退）或印钞货币化（引发通胀）。</p><p><b>个人层面</b>：加税预期；公共服务质量下降；本币贬值侵蚀储蓄；国债收益率上升会推高全社会利率，<b>房贷和企业贷款都变贵</b>，年轻人买房更难。</p>',
+ lo:'<p><b>国家层面</b>：有财政空间做逆周期刺激，危机时能兜底；主权评级高，借债便宜；代际负担轻，不用把包袱丢给下一代。</p><p><b>个人层面</b>：税负相对轻，公共品供给有保障；利率环境更友好，购房和企业融资成本低。</p>',
+ note:'债务率高低<b>不能只看数字</b>，关键看三点：① <b>币种</b>——本币债不会违约，只会通胀；外币债会违约。② <b>债权人结构</b>——国内持有 vs 外债。③ <b>利率与名义GDP增速的关系</b>——r＜g 时债务率会自己往下走。日本250%以上但绝大多数是本国央行和国内机构持有，和阿根廷的外币债完全不是一回事。'},
+
+{k:'exports',ico:'🚢',name:'出口总额',tag:'赚外汇的能力',stress:false,fmt:'money',
+ def:'一国商品与服务出口的美元金额。反映一国把产品卖到国外、赚取外汇的能力。',
+ calc:'国际收支口径（含服务贸易）。单看总额意义有限，要结合<b>占GDP比重</b>和<b>贸易差额</b>一起看。',
+ bands:[{t:'＜15%<br>内需主导',c:'#C9D6E2'},{t:'15–30%<br>开放型',c:'#4A90D9'},{t:'＞30%<br>高度依赖外需',c:'#0F3352'}],
+ hi:'<p><b>国家层面</b>：创造外汇、支撑本币汇率、带动就业和整条产业链；积累外汇储备；但顺差太大容易招致贸易摩擦和关税报复。</p><p><b>个人层面</b>：制造业和外向型岗位多，工业区、沿海地区工资上涨快；代价是过度依赖外部需求——海外一衰退或一加关税，立刻传导到就业。</p>',
+ lo:'<p><b>国家层面</b>：外汇短缺导致进口能力受限；本币贬值压力；可能被迫借外债；产业升级缺外汇买设备和技术。</p><p><b>个人层面</b>：外向型岗位减少；但内需型服务业（餐饮、零售、本地服务）可能相对受益，就业结构向内转。</p>',
+ note:'出口多 ≠ 赚钱多。要看<b>出口增加值</b>：加工贸易出口100元，可能只赚5元加工费（iPhone组装最典型）。真正该比较的是贸易差额和增加值，不是总额排名。'},
+
+{k:'imports',ico:'📦',name:'进口总额',tag:'内需与资源缺口',stress:false,fmt:'money',
+ def:'一国商品与服务进口的美元金额。反映内需强度，以及这个国家在资源和技术上对外部的依赖程度。',
+ calc:'国际收支口径。资源匮乏型经济体（日本、韩国、新加坡）进口占GDP比重天然很高，这是禀赋决定的，不是缺点。',
+ bands:[{t:'＜15%<br>自给为主',c:'#C9D6E2'},{t:'15–30%<br>正常开放',c:'#4A90D9'},{t:'＞30%<br>高度依赖进口',c:'#0F3352'}],
+ hi:'<p><b>国家层面</b>：说明内需旺盛或资源禀赋不足；消费者能用上更便宜更多样的商品，整体福利提升；但会形成贸易逆差和外汇压力。</p><p><b>个人层面</b>：商品选择多、价格低（进口车、进口药、进口食品）；但本土制造业岗位可能流失，出现“产业空心化”，低技能工人受伤最重。</p>',
+ lo:'<p><b>国家层面</b>：可能是内需疲弱，也可能是关税壁垒高、市场封闭；自给率高但效率低，缺乏国际竞争压力。</p><p><b>个人层面</b>：选择少、价格高（同样商品比国外贵很多）；本土产业受保护，但缺少竞争，质量和服务容易退化。</p>',
+ note:'进口不是“坏事”。进口设备、芯片、原材料是<b>生产能力投资</b>；进口消费品是<b>直接提升福利</b>。真正危险的结构是“出口资源、进口消费品”——那是把家底换成享受。'},
+
+{k:'trade_balance',ico:'⚖️',name:'贸易差额',tag:'顺差还是逆差',stress:true,fmt:'money',
+ def:'出口 − 进口。正数为顺差（赚的比花的多），负数为逆差（花的比赚的多）。',
+ calc:'商品贸易差额（部分口径含服务）。判断严重程度要看<b>占GDP比重</b>，绝对金额没有可比性——大国天然金额大。',
+ bands:[{t:'＜−6%<br>大逆差',c:'#B03A2E'},{t:'−6~−3%<br>逆差',c:'#C0562E'},{t:'±3%<br>基本平衡',c:'#1E7A32'},{t:'+3~+6%<br>顺差',c:'#B7791F'},{t:'＞+6%<br>大顺差',c:'#C0562E'}],
+ hi:'<p><b>国家层面</b>：外汇增加，本币有升值压力；若央行干预压汇率，就要被动投放本币，容易催生资产泡沫（中国2005–2015的房价与外汇占款关系就是典型）；储蓄过剩的另一面是内需不足。</p><p><b>个人层面</b>：出口行业就业好、工资涨；但进口商品变贵，出国旅游、留学成本上升；本质是“生产得多、消费得少”，国民福利其实外流了。</p>',
+ lo:'<p><b>国家层面</b>：外汇流失，本币贬值压力；必须靠资本流入（FDI、借债、热钱）弥补，一旦资本流入断档就是货币危机——1997亚洲金融危机、阿根廷反复违约都是这个剧本。</p><p><b>个人层面</b>：货币还没贬时，进口商品反而便宜；一旦贬值，输入型通胀立刻上来，出国、海淘、进口药全部变贵，外币债务压力骤增。</p>',
+ note:'顺差不是越多越好。德国、中国长期大顺差引发全球失衡和贸易战；逆差也不一定坏——美国靠美元霸权用本币借债，逆差是储备货币的特权，别的国家学不来，硬学就是危机。'},
+
+{k:'reserves',ico:'🛡️',name:'外汇储备',tag:'汇率“弹药库”',stress:false,fmt:'money',
+ def:'央行持有的对外资产，主要是美元、美债、黄金和SDR。用来干预汇率、偿付外债、稳定市场信心。',
+ calc:'更科学的看法是<b>进口覆盖月数</b>（储备 ÷ 月均进口额）和<b>是否覆盖短期外债</b>，而不是绝对金额大小。',
+ bands:[{t:'＜3个月<br>危险',c:'#B03A2E'},{t:'3–6个月<br>偏低',c:'#C0562E'},{t:'6–12个月<br>充足',c:'#1E7A32'},{t:'＞12个月<br>充裕',c:'#0F3352'}],
+ hi:'<p><b>国家层面</b>：有能力稳住汇率、扛住资本外流；主权信用有背书，借债便宜；危机时能直接干预市场止血。</p><p><b>个人层面</b>：本币更稳，进口商品价格稳定；换汇、出国用汇不受限。代价是储备收益很低（大多买美债），且被动投放本币会带来通胀和资产泡沫压力。</p>',
+ lo:'<p><b>国家层面</b>：货币容易被做空——1997年泰铢就是储备耗尽后被击穿的；进口支付能力受限，能源粮食买不起；可能要求助IMF并接受紧缩条件；被迫大幅加息保汇率，经济雪上加霜。</p><p><b>个人层面</b>：换汇受限、排队购汇；进口商品和药品涨价；本币贬值使海外资产缩水、外币负债翻倍。</p>',
+ note:'储备不是越多越好，关键是<b>够不够覆盖短期外债＋进口</b>。中国3万亿美元看着多，但同时有大量外债和外资存量；俄罗斯储备不少却被冻结过——<b>储备的“可用性”比数字更重要</b>。'},
+
+{k:'fdi',ico:'🏭',name:'FDI 净流入',tag:'长期资本信心',stress:false,fmt:'money',
+ def:'外国直接投资净额——建厂、并购、利润再投资。属于“长期钱”，<b>不包括</b>买卖股票债券的短期资金（热钱）。',
+ calc:'国际收支口径（直接投资负债方减资产方）。要区分<b>绿地投资</b>（新建工厂，真增量）和<b>并购</b>（换股东，不新增产能）。',
+ bands:[{t:'＜0<br>净流出',c:'#B03A2E'},{t:'0–2%<br>偏低',c:'#C0562E'},{t:'2–4%<br>正常',c:'#1E7A32'},{t:'＞5%<br>吸引力强',c:'#0F3352'}],
+ hi:'<p><b>国家层面</b>：带来技术、管理经验、就业和出口渠道，推动产业链升级（中国1990s–2010s的路径）；但也要防“只赚加工费”、利润大额汇出、关键产业被外资控制。</p><p><b>个人层面</b>：就业机会增加，工资被带动上涨；能学到技术和管理；本地配套产业（物流、零部件、餐饮）跟着兴起。</p>',
+ lo:'<p><b>国家层面</b>：外资撤离往往<b>早于</b>货币危机——1997亚洲金融危机前FDI就已经转向；就业和出口受损，技术转移停滞；产业链外迁一旦成势很难逆转。</p><p><b>个人层面</b>：外企岗位减少，薪资标杆消失；产业链外迁意味着本地工作机会长期流失，年轻人只能外出打工。</p>',
+ note:'FDI 是“长期钱”，比证券投资稳定得多。所以 <b>FDI 持续流出比股市外资流出更值得警惕</b>——它代表的是对一国长期生产率和制度环境的判断，不是短期情绪。'},
+
+{k:'ca',ico:'🌐',name:'经常账户',tag:'对外收支总账',stress:true,fmt:'money',
+ def:'贸易差额 ＋ 服务贸易 ＋ 投资收益 ＋ 经常转移。最宽的对外收支口径，反映一国是“净储蓄输出国”还是“净借入国”。',
+ calc:'通常看占GDP比重。IMF 认为持续超过 ±4% 就属于“全球失衡”，需要调整。',
+ bands:[{t:'＜−4%<br>持续逆差',c:'#B03A2E'},{t:'−4~0<br>小幅逆差',c:'#C0562E'},{t:'0~+4%<br>小幅顺差',c:'#1E7A32'},{t:'＞+4%<br>持续顺差',c:'#B7791F'}],
+ hi:'<p><b>国家层面</b>：净储蓄输出，海外净资产不断累积；本币有升值压力；但也说明国内消费和投资不足——钱在给别人用（大量买美债）。</p><p><b>个人层面</b>：出口行业受益；但国内消费被压抑，公共服务和社保投入可能不足，居民“不敢花钱”。</p>',
+ lo:'<p><b>国家层面</b>：必须靠资本账户流入弥补，对外负债不断累积；货币贬值压力；一旦外部融资断了就爆危机——希腊、葡萄牙欧债危机就是这个逻辑。</p><p><b>个人层面</b>：如果逆差是靠借外债维持消费，那就是“透支未来”，最终要通过紧缩、加税、货币贬值来还，当代人借、下一代还。</p>',
+ note:'<b>经常账户逆差 ＋ 财政赤字 ＝ “双赤字”</b>，是最危险的组合（美国是唯一例外，靠美元特权）。反过来“双顺差”也不健康，说明内需太弱、储蓄过剩。'}
+];
+
+const KEYECO=[['China','中国'],['United States','美国'],['Japan','日本'],['Germany','德国'],['India','印度']];
+let EDUCHIP='all';
+
+function renderCombo(){
+  $('comboTable').innerHTML =
+    '<tr><th>增长</th><th>物价</th><th>经济状态</th><th>对普通人意味着什么</th></tr>'+
+    COMBO.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td>
+      <td class="st" style="color:${r[4]}">${r[2]}</td>
+      <td style="color:#4B5563;font-weight:400">${r[3]}</td></tr>`).join('');
+}
+
+function liveLine(e){
+  if(!MACRO || !e.fmt) return '';
+  const cs = MACRO.countries||{};
+  const parts=[];
+  KEYECO.forEach(([en,cn])=>{
+    const c=cs[en]; if(!c) return;
+    const v=c[e.k]; if(v==null) return;
+    const txt = e.fmt==='pct' ? (v>=0?'+':'')+v.toFixed(1)+'%' : fmtMoney(v);
+    parts.push(`<i>${cn} <b>${txt}</b></i>`);
+  });
+  return parts.length ? `<div class="live">${parts.join('')}</div>` : '';
+}
+
+function renderEdu(){
+  renderCombo();
+  $('eduChips').innerHTML =
+    `<div class="chip ${EDUCHIP==='all'?'on':''}" onclick="jumpEdu('all')">全部</div>`+
+    EDU.map(e=>`<div class="chip ${EDUCHIP===e.k?'on':''}" onclick="jumpEdu('${e.k}')">${e.ico} ${e.name}</div>`).join('');
+  const list = EDUCHIP==='all' ? EDU : EDU.filter(e=>e.k===EDUCHIP);
+  $('eduList').innerHTML = list.map(e=>{
+    const hcls = e.stress?'hi':'neu', lcls = e.stress?'lo':'neu';
+    return `<div class="edu" id="edu-${e.k}">
+      <div class="edu-hd">
+        <div class="edu-ico">${e.ico}</div>
+        <div><div class="edu-t">${e.name}<span class="edu-tag">${e.tag}</span></div></div>
+      </div>
+      <div class="edu-def">${e.def}</div>
+      <div class="edu-calc">${e.calc}</div>
+      ${liveLine(e)}
+      <div class="bands">${e.bands.map(b=>`<div class="band" style="background:${b.c}">${b.t}</div>`).join('')}</div>
+      <div class="bands-lb"><span>← 偏低</span><span>偏高 →</span></div>
+      <div class="edu-grid">
+        <div class="ec ${hcls}"><h4>📈 偏高时会怎样</h4>${e.hi}</div>
+        <div class="ec ${lcls}"><h4>📉 偏低时会怎样</h4>${e.lo}</div>
+      </div>
+      <div class="edu-note"><b>⚠️ 常见误读：</b>${e.note}</div>
+    </div>`;
+  }).join('');
+  if(EDUCHIP!=='all'){
+    const el=$('edu-'+EDUCHIP);
+    if(el) el.scrollIntoView({block:'start'});
+  }
+}
+function jumpEdu(k){
+  EDUCHIP=k; renderEdu();
+  if(k==='all') $('sec-edu').scrollIntoView({block:'start'});
+}
+
 /* ---- tab 切换（懒加载）---- */
 const LOADED={};
 document.querySelectorAll('.tab').forEach(t=>{
@@ -278,6 +510,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     if(s==='hold'){ if(!LOADED.hold){LOADED.hold=1;loadHoldings();} setTimeout(()=>HOLDCHART&&HOLDCHART.resize(),80); }
     if(s==='fx'&&!LOADED.fx){LOADED.fx=1;loadFx();}
     if(s==='flow'&&!LOADED.flow){LOADED.flow=1;renderFlow();}
+    if(s==='edu'&&!LOADED.edu){LOADED.edu=1;renderEdu();}
   });
 });
 
