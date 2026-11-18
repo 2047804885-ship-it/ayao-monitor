@@ -203,29 +203,6 @@ def save_state(st):
     os.replace(tmp, STATE_FILE)
 
 
-def git_commit_state(msg='state'):
-    """把状态文件提交回仓库，防止任务中断后重复推送"""
-    import subprocess
-    try:
-        trim_log()
-        subprocess.run(['git', 'add', STATE_FILE, LOG_FILE], capture_output=True, timeout=30)
-        c = subprocess.run(['git', 'commit', '-m', '%s %s' % (msg, datetime.now(CST).strftime('%m-%d %H:%M'))],
-                           capture_output=True, text=True, timeout=60)
-        if c.returncode != 0:
-            return False
-        for _ in range(3):
-            subprocess.run(['git', 'pull', '--rebase', '--autostash', 'origin', 'main'],
-                           capture_output=True, timeout=90)
-            p = subprocess.run(['git', 'push'], capture_output=True, text=True, timeout=90)
-            if p.returncode == 0:
-                log('状态已提交')
-                return True
-            time.sleep(3)
-    except Exception as e:
-        log('git state fail: %s' % str(e)[:80])
-    return False
-
-
 def redispatch_next():
     """本次长驻快结束时，自动触发下一棒，保证 24 小时不断"""
     tok = os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN') or ''
@@ -254,6 +231,20 @@ def key_of(o):
     return '%s|%s|%s|%s' % (o.get('orderTime'), o.get('symbol'), o.get('side'), o.get('executedQty'))
 
 
+def pick_fresh(orders, last_ts, seen, now_ms, window_ms=600000):
+    """挑出需要推送的新订单：
+    1) orderTime 晚于游标  2) 不在已推集合  3) 发生在最近 window 内（防重启补推历史）
+    """
+    cutoff = now_ms - window_ms
+    fresh = []
+    for o in orders:
+        ot = int(o.get('orderTime') or 0)
+        if ot > last_ts and key_of(o) not in seen and ot > cutoff:
+            fresh.append(o)
+    fresh.sort(key=lambda x: int(x.get('orderTime') or 0))
+    return fresh
+
+
 def main():
     st = load_state()
     last_ts = int(st.get('lastTs') or 0)
@@ -267,7 +258,6 @@ def main():
             seen = [key_of(o) for o in orders[:10]]
         save_state({'lastTs': last_ts, 'seen': seen, 'note': 'init'})
         log('首次初始化，游标 = %s（不推送历史）' % last_ts)
-        git_commit_state('init')
         # 启动确认单独发一条
         if TOKEN and UID:
             try:
@@ -306,7 +296,6 @@ def main():
                 seen = [key_of(o) for o in newest[:10]]
                 save_state({'lastTs': last_ts, 'seen': seen, 'note': 'gap-skip',
                             'lastPoll': int(time.time() * 1000)})
-                git_commit_state('gap')
                 if TOKEN and UID:
                     try:
                         body = {'appToken': TOKEN,
@@ -323,20 +312,16 @@ def main():
     except Exception as e:
         log('断档检查失败（忽略）: %s' % str(e)[:80])
 
-    # 启动即落盘一次，便于从仓库直接确认任务活着
+    # 启动落盘（仅本地，不写 git）
     save_state({'lastTs': last_ts, 'seen': seen, 'note': 'start'})
-    git_commit_state('start')
 
     while time.time() - t0 < MAX_HOURS * 3600:
         try:
             orders = fetch_orders(20)
             err_n = 0
-            fresh = []
-            for o in orders:
-                ot = int(o.get('orderTime') or 0)
-                k = key_of(o)
-                if ot > last_ts and k not in seen:
-                    fresh.append(o)
+            # 只推「比游标新」且「发生在最近 10 分钟内」的订单，
+            # 这样即使任务重启、状态丢失，也不会把历史订单一次性补推出来
+            fresh = pick_fresh(orders, last_ts, seen, time.time() * 1000)
             if fresh:
                 fresh.sort(key=lambda x: int(x.get('orderTime') or 0))
                 log('发现 %d 笔新成交' % len(fresh))
@@ -346,7 +331,6 @@ def main():
                 last_ts = max(int(o.get('orderTime') or 0) for o in fresh)
                 seen = [key_of(o) for o in fresh[-10:]]
                 save_state({'lastTs': last_ts, 'seen': seen})
-                git_commit_state('watch')
                 last_commit = time.time()
         except Exception as e:
             err_n += 1
@@ -357,12 +341,10 @@ def main():
             save_state({'lastTs': last_ts, 'seen': seen})
             last_commit = time.time()
             log('状态已保存 lastTs=%s' % last_ts)
-            git_commit_state('state')
 
         time.sleep(POLL)
 
     save_state({'lastTs': last_ts, 'seen': seen, 'note': 'exit'})
-    git_commit_state('watch exit')
     log('本次长驻结束，lastTs=%s，触发下一棒' % last_ts)
     redispatch_next()
 
