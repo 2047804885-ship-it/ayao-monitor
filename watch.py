@@ -194,8 +194,13 @@ def load_state():
 def save_state(st):
     st['updated'] = datetime.now(CST).strftime('%Y-%m-%d %H:%M:%S')
     st['lastPoll'] = int(time.time() * 1000)
-    with open(STATE_FILE, 'w', encoding='utf-8') as f:
+    # 原子写：先写临时文件再替换，避免进程被取消时留下半截 JSON
+    tmp = STATE_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(st, f, ensure_ascii=False, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, STATE_FILE)
 
 
 def git_commit_state(msg='state'):
