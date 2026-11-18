@@ -108,6 +108,24 @@ def fmt_qty(v):
     return '{:.6f}'.format(v).rstrip('0').rstrip('.')
 
 
+def fmt_price(v):
+    """价格按量级选精度：>=100 两位、>=1 三位、<1 六位，去掉尾部 0"""
+    try:
+        v = float(v)
+    except Exception:
+        return str(v)
+    a = abs(v)
+    if a >= 100:
+        s = '{:,.2f}'.format(v)
+    elif a >= 1:
+        s = '{:,.3f}'.format(v)
+    else:
+        s = '{:.6f}'.format(v)
+    if '.' in s:
+        s = s.rstrip('0').rstrip('.')
+    return s
+
+
 def build_html(items, title_suffix=''):
     parts = ['<div style="font-family:-apple-system,\'PingFang SC\',sans-serif;font-size:14px;line-height:1.65">',
              '<div style="font-size:16px;font-weight:700;color:#1F2937;margin-bottom:8px">🐼 熬鹰资本 · 最新交易%s</div>' % title_suffix]
@@ -126,7 +144,7 @@ def build_html(items, title_suffix=''):
         parts.append('<div><b style="color:%s">%s %s</b> <b>%s</b> <span style="color:#6B7280">永续</span></div>'
                      % (col, icon, act, sym))
         parts.append('<div style="color:#374151">均价 <b>%s</b>　数量 <b>%s %s</b></div>'
-                     % (fmt_num(avg, 4).rstrip('0').rstrip('.'), fmt_qty(qty), base))
+                     % (fmt_price(avg), fmt_qty(qty), base))
         parts.append('<div style="color:#374151">总价值 <b>%s USDT</b></div>' % fmt_num(val))
         if abs(pnl) > 1e-9:
             pc = '#B03A2E' if pnl > 0 else '#1E7A32'
