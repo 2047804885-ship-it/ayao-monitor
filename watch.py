@@ -311,9 +311,15 @@ def main():
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '--test-push':
-        ok = push([{'symbol': 'TESTUSDT', 'baseAsset': 'TEST', 'side': 'SELL',
-                    'positionSide': 'SHORT', 'executedQty': 8.011, 'avgPrice': 64377.98,
-                    'totalPnl': 0, 'orderTime': int(time.time() * 1000)}])
-        print('test push:', ok)
+        try:
+            orders = fetch_orders(5)[:2]
+            ok = push(orders, title_suffix='（链路验证）')
+            print('test push (real data):', ok, 'n=', len(orders))
+        except Exception as e:
+            print('fetch fail:', e)
+            ok = push([{'symbol': 'TESTUSDT', 'baseAsset': 'TEST', 'side': 'SELL',
+                        'positionSide': 'SHORT', 'executedQty': 8.011, 'avgPrice': 64377.98,
+                        'totalPnl': 0, 'orderTime': int(time.time() * 1000)}])
+            print('fallback test push:', ok)
         sys.exit(0)
     main()
