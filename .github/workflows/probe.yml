@@ -1,0 +1,27 @@
+name: Probe API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run probe
+        run: python probe_api2.py
+      - name: Commit result
+        run: |
+          git config user.name "ayao-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add probe_out.json
+          git diff --cached --quiet && echo "no change" && exit 0
+          git commit -m "probe $(date -u +%FT%TZ)"
+          git push
