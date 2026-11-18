@@ -52,15 +52,10 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           python watch.py
 
-      - name: Commit state on exit
+      - name: Show state
         if: always()
         run: |
-          git config user.name "ayao-bot"
-          git config user.email "actions@users.noreply.github.com"
-          # 校验 JSON 合法再提交，避免进程被杀时提交半截文件
-          python -c "import json,sys; json.load(open('watchstate.json',encoding='utf-8'))" || { echo "watchstate.json 不合法，跳过提交"; exit 0; }
-          git add watchstate.json watchlog.txt 2>/dev/null || exit 0
-          git diff --cached --quiet && exit 0
-          git commit -m "watch state $(date -u +%FT%TZ)" || exit 0
-          git pull --rebase --autostash origin main || true
-          git push || true
+          echo "--- watchlog ---"
+          tail -20 watchlog.txt 2>/dev/null || echo "(no log)"
+          echo "--- state ---"
+          cat watchstate.json 2>/dev/null || echo "(no state)"
