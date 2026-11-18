@@ -82,6 +82,17 @@ tr:last-child td{border-bottom:none;}
 .live i{font-style:normal;font-size:11px;background:#F4F6F8;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:#4B5563;font-variant-numeric:tabular-nums;}
 .live i b{color:var(--ink);}
 .combo td{white-space:normal;text-align:left;}
+
+/* ===== 搜索框 ===== */
+.sbox{position:relative;margin:0 0 10px;}
+.sbox input{width:100%;padding:10px 34px 10px 32px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:#fff;color:var(--ink);outline:none;font-family:inherit;}
+.sbox input::placeholder{color:#9AA3AF;}
+.sbox input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,92,140,.10);}
+.sbox::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.5;pointer-events:none;}
+.sbox .clr{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;line-height:19px;text-align:center;border-radius:50%;background:#E9EDF1;color:#6B7280;font-size:13px;cursor:pointer;display:none;font-weight:700;}
+.sbox.has .clr{display:block;}
+.sbox .cnt{font-size:11px;color:var(--sub);margin-top:4px;padding-left:3px;min-height:15px;}
+.empty{text-align:center;color:var(--sub);font-size:12.5px;padding:20px 10px;background:#fff;border:1px dashed var(--line);border-radius:10px;margin-bottom:10px;}
 .combo th{white-space:normal;}
 .combo td:first-child,.combo td:nth-child(2){white-space:nowrap;}
 .combo td:first-child{font-weight:600;}
@@ -116,31 +127,61 @@ tr:last-child td{border-bottom:none;}
       <div style="font-size:11.5px;color:var(--sub);margin-top:6px;" id="mapLegend"></div>
     </div>
     <h2>主要经济体指标对比</h2>
+    <div class="sbox" id="box-map">
+      <input id="q-map" type="text" placeholder="搜索经济体，如 中国 / China" oninput="onSearch('map',this)">
+      <div class="clr" onclick="clearSearch('map')">×</div>
+      <div class="cnt" id="cnt-map"></div>
+    </div>
     <div class="scroller"><table id="macroTable"></table></div>
+    <div class="empty" id="none-map" style="display:none">没有匹配的经济体，试试中文名或英文名</div>
     <div class="hint">左右滑动查看全部指标 · 点击表头排序</div>
   </div>
 
   <div class="sec" id="sec-fx" style="display:none">
     <div class="statgrid" id="fxStats"></div>
+    <div class="sbox" id="box-fx">
+      <input id="q-fx" type="text" placeholder="搜索货币或国家，如 人民币 / 日元 / JPY" oninput="onSearch('fx',this)">
+      <div class="clr" onclick="clearSearch('fx')">×</div>
+      <div class="cnt" id="cnt-fx"></div>
+    </div>
     <div class="scroller"><table id="fxTable"></table></div>
+    <div class="empty" id="none-fx" style="display:none">没有匹配的货币，试试中文名或三位代码</div>
     <h2>汇率强弱榜（近 4 日 vs 美元）</h2>
     <div class="card" id="fxRank"></div>
   </div>
 
   <div class="sec" id="sec-flow" style="display:none">
     <div class="statgrid" id="flowStats"></div>
-    <h2>🔵 资本净流入 TOP10（外资青睐）</h2>
-    <div class="scroller"><table id="fdiIn"></table></div>
-    <h2>🔴 资本净流出 TOP10（外逃压力）</h2>
-    <div class="scroller"><table id="fdiOut"></table></div>
-    <h2>📦 贸易顺差 / 逆差 TOP</h2>
-    <div class="scroller"><table id="tradeTable"></table></div>
+    <div class="sbox" id="box-flow">
+      <input id="q-flow" type="text" placeholder="搜索经济体，如 美国 / Vietnam" oninput="onSearch('flow',this)">
+      <div class="clr" onclick="clearSearch('flow')">×</div>
+      <div class="cnt" id="cnt-flow"></div>
+    </div>
+    <div class="blk" id="blk-fdiIn">
+      <h2>🔵 资本净流入 TOP10（外资青睐）</h2>
+      <div class="scroller"><table id="fdiIn"></table></div>
+    </div>
+    <div class="blk" id="blk-fdiOut">
+      <h2>🔴 资本净流出 TOP10（外逃压力）</h2>
+      <div class="scroller"><table id="fdiOut"></table></div>
+    </div>
+    <div class="blk" id="blk-trade">
+      <h2>📦 贸易顺差 / 逆差 TOP</h2>
+      <div class="scroller"><table id="tradeTable"></table></div>
+    </div>
+    <div class="empty" id="none-flow" style="display:none">没有匹配的经济体，换个关键词试试</div>
   </div>
 
   <div class="sec" id="sec-hold" style="display:none">
     <div class="card"><div id="holdBox" style="width:100%;height:520px;"></div></div>
     <h2>控股关系明细</h2>
+    <div class="sbox" id="box-hold">
+      <input id="q-hold" type="text" placeholder="搜索公司或股东名称" oninput="onSearch('hold',this)">
+      <div class="clr" onclick="clearSearch('hold')">×</div>
+      <div class="cnt" id="cnt-hold"></div>
+    </div>
     <div class="scroller"><table id="holdTable"></table></div>
+    <div class="empty" id="none-hold" style="display:none">没有匹配的公司或股东</div>
     <div class="hint">数据来自 Wikidata：蓝＝被查公司 · 橙＝母公司/控股方 · 紫＝股东 · 箭头指向被投资方</div>
   </div>
 
@@ -158,6 +199,11 @@ tr:last-child td{border-bottom:none;}
     <div class="scroller" style="margin-bottom:12px"><table class="combo" id="comboTable"></table></div>
 
     <h2>逐个指标看懂（含义 · 高低 · 影响）</h2>
+    <div class="sbox" id="box-edu">
+      <input id="q-edu" type="text" placeholder="搜索指标或关键词，如 通胀 / 失业 / 通缩" oninput="onSearch('edu',this)">
+      <div class="clr" onclick="clearSearch('edu')">×</div>
+      <div class="cnt" id="cnt-edu"></div>
+    </div>
     <div class="chips" id="eduChips"></div>
     <div id="eduList"></div>
     <div class="hint" style="margin-top:4px">以上分档为国际机构常用参考区间（世行 / IMF / 欧盟标准），仅作理解标尺，不是绝对界限。当前值取自世界银行最新年度数据。</div>
@@ -180,6 +226,10 @@ const fmtMoney = v => {
   return s+a.toFixed(0);
 };
 const fmtPct = v => (v==null||isNaN(v))?'—':(v>=0?'+':'')+Number(v).toFixed(2)+'%';
+/* 中文国名（世界银行英文名 → 中文），用于显示与搜索 */
+const CN={'Algeria':'阿尔及利亚', 'Argentina':'阿根廷', 'Australia':'澳大利亚', 'Austria':'奥地利', 'Bangladesh':'孟加拉国', 'Brazil':'巴西', 'Canada':'加拿大', 'Chile':'智利', 'China':'中国', 'Colombia':'哥伦比亚', 'Czechia':'捷克', 'Denmark':'丹麦', 'Egypt, Arab Rep.':'埃及', 'Ethiopia':'埃塞俄比亚', 'Finland':'芬兰', 'France':'法国', 'Germany':'德国', 'Greece':'希腊', 'Hungary':'匈牙利', 'India':'印度', 'Indonesia':'印度尼西亚', 'Iraq':'伊拉克', 'Ireland':'爱尔兰', 'Israel':'以色列', 'Italy':'意大利', 'Japan':'日本', 'Kazakhstan':'哈萨克斯坦', 'Kenya':'肯尼亚', 'Korea, Rep.':'韩国', 'Kuwait':'科威特', 'Malaysia':'马来西亚', 'Mexico':'墨西哥', 'Morocco':'摩洛哥', 'Netherlands':'荷兰', 'New Zealand':'新西兰', 'Nigeria':'尼日利亚', 'Norway':'挪威', 'Pakistan':'巴基斯坦', 'Peru':'秘鲁', 'Philippines':'菲律宾', 'Poland':'波兰', 'Portugal':'葡萄牙', 'Qatar':'卡塔尔', 'Romania':'罗马尼亚', 'Russian Federation':'俄罗斯', 'Saudi Arabia':'沙特阿拉伯', 'Singapore':'新加坡', 'South Africa':'南非', 'Spain':'西班牙', 'Sri Lanka':'斯里兰卡', 'Sweden':'瑞典', 'Switzerland':'瑞士', 'Thailand':'泰国', 'Turkiye':'土耳其', 'Ukraine':'乌克兰', 'United Arab Emirates':'阿联酋', 'United Kingdom':'英国', 'United States':'美国', 'Viet Nam':'越南'};
+const cnOf = n => CN[n] || n;
+
 let MACRO=null, MAPCHART=null, HOLDCHART=null, CURMETRIC='gdp';
 const METRICS=[
   {k:'gdp',label:'GDP总量',pct:false},{k:'gdp_growth',label:'GDP增速',pct:true},
@@ -215,7 +265,7 @@ function renderMap(){
   const data=[];
   Object.values(MACRO.countries).forEach(c=>{
     const v=c[CURMETRIC];
-    if(v!=null) data.push({name:c.map, value:v, cn:c.name, year:c.year});
+    if(v!=null) data.push({name:c.map, value:v, cn:cnOf(c.name), year:c.year});
   });
   const vals = data.map(d=>d.value).filter(isFinite);
   const maxV = vals.length?Math.max(...vals.map(Math.abs)):1;
@@ -245,7 +295,8 @@ function renderTable(){
   };
   $('macroTable').innerHTML =
     '<tr><th>经济体</th>'+cols.map(k=>`<th>${labels[k]}</th>`).join('')+'</tr>'+
-    rows.map(c=>`<tr><td>${c.name}</td>`+cols.map(k=>cell(k,c)).join('')+'</tr>').join('');
+    rows.map(c=>`<tr data-alt="${c.name}"><td>${cnOf(c.name)}</td>`+cols.map(k=>cell(k,c)).join('')+'</tr>').join('');
+  reapply();
 }
 
 /* ---- 汇率 ---- */
@@ -276,6 +327,7 @@ async function loadFx(){
     $('fxStats').innerHTML = `
       <div class="stat"><div class="k">人民币 (CNY)</div><div class="v">${cny?cny.rate:'—'} <span style="font-size:12px;color:${cny&&cny.chg>0?'var(--grn)':'var(--red)'}">${cny?fmtPct(cny.chg):''}</span></div></div>
       <div class="stat"><div class="k">欧元 (EUR)</div><div class="v">${eur?eur.rate:'—'} <span style="font-size:12px;color:${eur&&eur.chg>0?'var(--grn)':'var(--red)'}">${eur?fmtPct(eur.chg):''}</span></div></div>`;
+    reapply();
   }catch(e){ $('upd').textContent='汇率加载失败 '+e.message; }
 }
 
@@ -290,15 +342,16 @@ function renderFlow(){
   const totalFdi=cs.reduce((a,c)=>a+(c.fdi||0),0);
   $('flowStats').innerHTML = `
     <div class="stat"><div class="k">全球 FDI 净流入合计</div><div class="v">${fmtMoney(totalFdi)}</div></div>
-    <div class="stat"><div class="k">最大顺差国</div><div class="v" style="font-size:15px">${top[0]?top[0].name+' '+fmtMoney(top[0].trade_balance):'—'}</div></div>`;
+    <div class="stat"><div class="k">最大顺差国</div><div class="v" style="font-size:15px">${top[0]?cnOf(top[0].name)+' '+fmtMoney(top[0].trade_balance):'—'}</div></div>`;
   const tbl=(arr,key,color)=>'<tr><th>#</th><th>经济体</th><th>金额</th><th>占GDP</th></tr>'+
-    arr.map((c,i)=>`<tr><td>${i+1}</td><td>${c.name}</td><td class="${color}">${fmtMoney(c[key])}</td><td>${c.gdp?(c[key]/c.gdp*100).toFixed(1)+'%':'—'}</td></tr>`).join('');
+    arr.map((c,i)=>`<tr data-alt="${c.name}"><td>${i+1}</td><td>${cnOf(c.name)}</td><td class="${color}">${fmtMoney(c[key])}</td><td>${c.gdp?(c[key]/c.gdp*100).toFixed(1)+'%':'—'}</td></tr>`).join('');
   $('fdiIn').innerHTML=tbl(fdiIn,'fdi','num-up');
   $('fdiOut').innerHTML=tbl(fdiOut,'fdi','num-dn');
   $('tradeTable').innerHTML =
     '<tr><th>类型</th><th>经济体</th><th>贸易差额</th><th>出口</th><th>进口</th></tr>'+
-    top.map(c=>`<tr><td style="color:var(--grn)">顺差</td><td>${c.name}</td><td class="num-up">${fmtMoney(c.trade_balance)}</td><td>${fmtMoney(c.exports)}</td><td>${fmtMoney(c.imports)}</td></tr>`).join('')+
-    bot.map(c=>`<tr><td style="color:var(--red)">逆差</td><td>${c.name}</td><td class="num-dn">${fmtMoney(c.trade_balance)}</td><td>${fmtMoney(c.exports)}</td><td>${fmtMoney(c.imports)}</td></tr>`).join('');
+    top.map(c=>`<tr data-alt="${c.name}"><td style="color:var(--grn)">顺差</td><td>${cnOf(c.name)}</td><td class="num-up">${fmtMoney(c.trade_balance)}</td><td>${fmtMoney(c.exports)}</td><td>${fmtMoney(c.imports)}</td></tr>`).join('')+
+    bot.map(c=>`<tr data-alt="${c.name}"><td style="color:var(--red)">逆差</td><td>${cnOf(c.name)}</td><td class="num-dn">${fmtMoney(c.trade_balance)}</td><td>${fmtMoney(c.exports)}</td><td>${fmtMoney(c.imports)}</td></tr>`).join('');
+  reapply();
 }
 
 /* ---- 控股 ---- */
@@ -328,7 +381,56 @@ async function loadHoldings(){
     $('holdTable').innerHTML =
       '<tr><th>投资方</th><th>被投资方</th><th>关系</th></tr>'+
       (d.links||[]).slice(0,60).map(l=>`<tr><td><b>${nameOf[l.source]||l.source}</b></td><td>${nameOf[l.target]||l.target}</td><td style="color:#666">${l.rel}</td></tr>`).join('');
+    reapply();
   }catch(e){ $('holdBox').innerHTML='<div class="loading">加载失败 '+e.message+'</div>'; }
+}
+
+/* ================= 搜索 ================= */
+const norm = s => (s==null?'':String(s)).toLowerCase().replace(/[\s,，、·\-—_()（）]/g,'');
+const SEARCH_TABLES = {map:'macroTable', fx:'fxTable', flow:'fdiIn,fdiOut,tradeTable', hold:'holdTable'};
+
+const BLOCK = {fdiIn:'blk-fdiIn', fdiOut:'blk-fdiOut', tradeTable:'blk-trade'};
+function filterRows(ids, q, sec){
+  const n = norm(q);
+  let hit = 0, tot = 0;
+  ids.split(',').forEach(id=>{
+    const tb = $(id); if(!tb) return;
+    let vis = 0;
+    Array.from(tb.rows).forEach(r=>{
+      if(r.querySelector('th')) return;   // 跳过表头
+      tot++;
+      const ok = !n || norm(r.innerText + '|' + (r.getAttribute('data-alt')||'')).includes(n);
+      r.style.display = ok ? '' : 'none';
+      if(ok){ hit++; vis++; }
+    });
+    const blk = BLOCK[id] ? $(BLOCK[id]) : null;
+    if(blk) blk.style.display = (!n || vis > 0) ? '' : 'none';
+  });
+  const e = sec ? $('none-'+sec) : null;
+  if(e) e.style.display = (n && hit === 0) ? '' : 'none';
+  return {hit, tot};
+}
+
+function onSearch(sec, input){
+  const box = $('box-'+sec);
+  if(box) box.classList.toggle('has', !!input.value);
+  if(sec === 'edu'){ EDUQ = input.value; renderEdu(); return; }
+  const r = filterRows(SEARCH_TABLES[sec], input.value, sec);
+  const c = $('cnt-'+sec);
+  if(c) c.textContent = input.value.trim() ? `匹配 ${r.hit} 条 / 共 ${r.tot} 条` : '';
+}
+
+function clearSearch(sec){
+  const i = $('q-'+sec); if(!i) return;
+  i.value = ''; onSearch(sec, i); i.focus();
+}
+
+/* 表格重绘后把已输入的搜索词重新应用一遍 */
+function reapply(){
+  ['map','fx','flow','hold'].forEach(s=>{
+    const i = $('q-'+s);
+    if(i && i.value.trim()) onSearch(s, i);
+  });
 }
 
 /* ================= 指标科普 ================= */
@@ -439,7 +541,7 @@ const EDU=[
 ];
 
 const KEYECO=[['China','中国'],['United States','美国'],['Japan','日本'],['Germany','德国'],['India','印度']];
-let EDUCHIP='all';
+let EDUCHIP='all', EDUQ='';
 
 function renderCombo(){
   $('comboTable').innerHTML =
@@ -464,10 +566,21 @@ function liveLine(e){
 
 function renderEdu(){
   renderCombo();
+  filterRows('comboTable', EDUQ);
+  const n = norm(EDUQ);
   $('eduChips').innerHTML =
     `<div class="chip ${EDUCHIP==='all'?'on':''}" onclick="jumpEdu('all')">全部</div>`+
     EDU.map(e=>`<div class="chip ${EDUCHIP===e.k?'on':''}" onclick="jumpEdu('${e.k}')">${e.ico} ${e.name}</div>`).join('');
-  const list = EDUCHIP==='all' ? EDU : EDU.filter(e=>e.k===EDUCHIP);
+  const list = EDU.filter(e=>
+    (EDUCHIP==='all' || e.k===EDUCHIP) &&
+    (!n || norm(e.name+e.tag+e.def+e.calc+e.hi+e.lo+e.note).includes(n))
+  );
+  const c = $('cnt-edu');
+  if(c) c.textContent = n ? `匹配 ${list.length} 个指标` : '';
+  if(!list.length){
+    $('eduList').innerHTML = '<div class="empty">没有找到相关指标，换个关键词试试（如 通胀 / 失业 / 债务 / 逆差）</div>';
+    return;
+  }
   $('eduList').innerHTML = list.map(e=>{
     const hcls = e.stress?'hi':'neu', lcls = e.stress?'lo':'neu';
     return `<div class="edu" id="edu-${e.k}">
