@@ -514,6 +514,16 @@ document.querySelectorAll('.tab').forEach(t=>{
   });
 });
 
+// 深链：?tab=edu 或 #edu 直接打开对应栏目
+(function(){
+  const q=(new URLSearchParams(location.search).get('tab')||'').trim();
+  const hs=(location.hash||'').replace('#','').trim();
+  const s=q||hs;
+  if(!s) return;
+  const t=document.querySelector('.tab[data-s="'+s+'"]');
+  if(t) setTimeout(()=>t.click(),60);
+})();
+
 // ECharts 就绪后注册地图并首次渲染
 (async function init(){
   if(typeof echarts==='undefined'){ return setTimeout(init,300); }
