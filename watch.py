@@ -193,6 +193,7 @@ def load_state():
 
 def save_state(st):
     st['updated'] = datetime.now(CST).strftime('%Y-%m-%d %H:%M:%S')
+    st['lastPoll'] = int(time.time() * 1000)
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
         json.dump(st, f, ensure_ascii=False, indent=1)
 
@@ -286,6 +287,36 @@ def main():
     last_commit = time.time()
     err_n = 0
     log('开始轮询，间隔 %ds，最长 %.1fh' % (POLL, MAX_HOURS))
+
+    # 断档保护：距上次轮询超过 30 分钟说明中间断过，直接跳到最新，避免一次补推几十条
+    try:
+        last_poll = int(st.get('lastPoll') or 0)
+        newest = fetch_orders(5)
+        if newest and last_poll and (time.time() * 1000 - last_poll) > 30 * 60 * 1000:
+            nmax = max(int(o.get('orderTime') or 0) for o in newest)
+            if nmax > last_ts:
+                gap = int((time.time() * 1000 - last_poll) / 60000)
+                log('检测到断档 %d 分钟，游标直接跳到最新，跳过历史补推' % gap)
+                last_ts = nmax
+                seen = [key_of(o) for o in newest[:10]]
+                save_state({'lastTs': last_ts, 'seen': seen, 'note': 'gap-skip',
+                            'lastPoll': int(time.time() * 1000)})
+                git_commit_state('gap')
+                if TOKEN and UID:
+                    try:
+                        body = {'appToken': TOKEN,
+                                'content': '<div style="font-size:14px">⚠️ <b>监控有 %d 分钟断档</b><br/>'
+                                           '<span style="color:#6B7280;font-size:12px">已跳过断档期间的成交，'
+                                           '从现在起恢复正常实时推送</span></div>' % gap,
+                                'summary': '监控断档 %d 分钟，已恢复' % gap,
+                                'contentType': 3, 'uids': [UID]}
+                        req = urllib.request.Request(WXPUSH_API, data=json.dumps(body).encode(),
+                                                     headers={'Content-Type': 'application/json'})
+                        urllib.request.urlopen(req, timeout=20, context=CTX).read()
+                    except Exception:
+                        pass
+    except Exception as e:
+        log('断档检查失败（忽略）: %s' % str(e)[:80])
 
     while time.time() - t0 < MAX_HOURS * 3600:
         try:
