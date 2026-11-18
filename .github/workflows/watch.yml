@@ -16,7 +16,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: ayao-watch
+  group: ayao-watch-${{ github.event.inputs.mode || 'watch' }}
   cancel-in-progress: false
 
 jobs:
