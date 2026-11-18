@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""第二轮探测：确认交易记录字段含义 + 测试 Cloudflare Worker 能否直连币安"""
+"""第三轮：找聚合的开/平仓接口（对应截图「最新交易记录」）"""
 import json
 import ssl
 import time
@@ -8,7 +8,6 @@ import urllib.error
 
 PID = '5075281354358777856'
 BAPI = 'https://www.binance.com/bapi/futures/v1'
-WORKER = 'https://ayao-monitor.jikui-ayao.workers.dev'
 UA = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
@@ -22,14 +21,13 @@ UA = {
 CTX = ssl.create_default_context()
 CTX.check_hostname = False
 CTX.verify_mode = ssl.CERT_NONE
-out = {}
 
 
-def raw(url, body=None, method=None, timeout=20, ua=None):
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, headers=(ua or UA), method=method)
+def post(path, body):
+    url = BAPI + path
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=UA, method='POST')
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+        with urllib.request.urlopen(req, timeout=20, context=CTX) as r:
             return r.status, r.read().decode('utf-8', 'ignore')
     except urllib.error.HTTPError as e:
         try:
@@ -37,39 +35,73 @@ def raw(url, body=None, method=None, timeout=20, ua=None):
         except Exception:
             return e.code, ''
     except Exception as e:
-        return 'ERR', str(e)[:120]
+        return 'ERR', str(e)[:100]
 
 
-# ---------- 1) 交易记录：拉 30 条看规律 ----------
-st, txt = raw(BAPI + '/friendly/future/copy-trade/lead-portfolio/trade-history',
-              {'portfolioId': PID, 'pageNumber': 1, 'pageSize': 30}, method='POST')
-print('trade-history:', st, len(txt))
+res = {}
+CAND = [
+    ('pos_hist_friendly', '/friendly/future/copy-trade/lead-portfolio/position-history'),
+    ('pos_hist_public', '/public/future/copy-trade/lead-portfolio/position-history'),
+    ('order_hist_friendly', '/friendly/future/copy-trade/lead-portfolio/order-history'),
+    ('order_hist_public', '/public/future/copy-trade/lead-portfolio/order-history'),
+    ('pos_hist_data', '/friendly/future/copy-trade/lead-data/position-history'),
+    ('trade_hist_friendly', '/friendly/future/copy-trade/lead-portfolio/trade-history'),
+]
+BODY = {'portfolioId': PID, 'pageNumber': 1, 'pageSize': 10}
+
+for name, path in CAND:
+    st, txt = post(path, BODY)
+    try:
+        j = json.loads(txt)
+        d = j.get('data') or {}
+        lst = d.get('list') if isinstance(d, dict) else (d if isinstance(d, list) else [])
+        n = len(lst or [])
+        item = (lst or [None])[0]
+        res[name] = {'status': st, 'code': j.get('code'), 'total': d.get('total') if isinstance(d, dict) else None,
+                     'n': n, 'first': item}
+        print('%-20s %s code=%s total=%s n=%s' % (name, st, j.get('code'),
+              d.get('total') if isinstance(d, dict) else '-', n))
+        if item:
+            print('     keys:', list(item.keys())[:18])
+            print('     item:', json.dumps(item, ensure_ascii=False)[:400])
+    except Exception as e:
+        res[name] = {'status': st, 'raw': txt[:200]}
+        print('%-20s %s parse-fail %s' % (name, st, txt[:120]))
+
+# 验证：把 trade-history 的成交按「同一秒」聚合，看能否还原 8.011BTC 这种大单
+st, txt = post('/friendly/future/copy-trade/lead-portfolio/trade-history',
+               {'portfolioId': PID, 'pageNumber': 1, 'pageSize': 200})
 try:
     j = json.loads(txt)
-    d = j.get('data') or {}
-    lst = d.get('list') or []
-    out['trade'] = {'status': st, 'total': d.get('total'), 'n': len(lst), 'items': lst[:30]}
-    print('total=%s n=%s' % (d.get('total'), len(lst)))
-    for it in lst[:6]:
-        print('  ', time.strftime('%m-%d %H:%M:%S', time.localtime(it['time'] / 1000)),
-              it.get('symbol'), it.get('side'), it.get('positionSide'),
-              'price=%s qty=%s val=%s pnl=%s' % (it.get('price'), it.get('qty'),
-                                                 it.get('quantity'), it.get('realizedProfit')))
+    lst = (j.get('data') or {}).get('list') or []
+    from collections import defaultdict
+    g = defaultdict(lambda: {'qty': 0.0, 'val': 0.0, 'pnl': 0.0, 'n': 0})
+    for it in lst:
+        k = (it['symbol'], it['side'], it['positionSide'], it['time'] // 1000)
+        g[k]['qty'] += float(it.get('qty') or 0)
+        g[k]['val'] += float(it.get('quantity') or 0)
+        g[k]['pnl'] += float(it.get('realizedProfit') or 0)
+        g[k]['n'] += 1
+    keys = sorted(g.keys(), key=lambda x: -x[3])[:8]
+    agg = []
+    for k in keys:
+        v = g[k]
+        agg.append({'symbol': k[0], 'side': k[1], 'ps': k[2],
+                    'ts': time.strftime('%m-%d %H:%M:%S', time.localtime(k[3])),
+                    'fills': v['n'], 'qty': round(v['qty'], 6),
+                    'val': round(v['val'], 2),
+                    'avg': round(v['val'] / v['qty'], 4) if v['qty'] else 0,
+                    'pnl': round(v['pnl'], 2)})
+    res['agg_1s'] = agg
+    print('\n按秒聚合（前 8 组）:')
+    for a in agg:
+        print('  ', a['ts'], a['symbol'], a['side'], a['ps'], 'fills=%s qty=%s avg=%s val=%s pnl=%s'
+              % (a['fills'], a['qty'], a['avg'], a['val'], a['pnl']))
+    print('trade-history 200 条总成交额:', round(sum(float(i.get('quantity') or 0) for i in lst), 2))
 except Exception as e:
-    out['trade'] = {'status': st, 'raw': txt[:400]}
-    print('parse fail', e)
-
-# ---------- 2) Worker 能否直连币安 ----------
-st, txt = raw(WORKER + '/api/test', timeout=30)
-out['worker_test'] = {'status': st, 'body': txt[:1200]}
-print('worker /api/test:', st, txt[:300])
-
-# ---------- 3) Worker /api/data 是否活着 ----------
-st, txt = raw(WORKER + '/api/data', timeout=30)
-out['worker_data'] = {'status': st, 'len': len(txt), 'head': txt[:300]}
-print('worker /api/data:', st, len(txt))
+    res['agg_1s'] = {'err': str(e)[:120]}
+    print('agg fail', e)
 
 with open('probe_out.json', 'w', encoding='utf-8') as f:
-    json.dump({'ts': time.strftime('%Y-%m-%d %H:%M:%S'), 'pid': PID, 'results': out},
-              f, ensure_ascii=False, indent=1)
+    json.dump({'ts': time.strftime('%Y-%m-%d %H:%M:%S'), 'results': res}, f, ensure_ascii=False, indent=1)
 print('written')
