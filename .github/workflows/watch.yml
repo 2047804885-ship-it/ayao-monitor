@@ -1,0 +1,64 @@
+name: Ayao Watch (realtime push)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'watch = 长驻轮询；test = 只发一条测试推送'
+        required: false
+        default: 'watch'
+  schedule:
+    # 兜底：万一长驻链路断了，每 30 分钟自动补一次
+    - cron: '*/30 * * * *'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: ayao-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Test push
+        if: github.event.inputs.mode == 'test'
+        env:
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+        run: python watch.py --test-push
+
+      - name: Watch loop
+        if: github.event.inputs.mode != 'test'
+        env:
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AYAO_POLL_SEC: '15'
+          AYAO_MAX_HOURS: '5.6'
+        run: |
+          git config user.name "ayao-bot"
+          git config user.email "actions@users.noreply.github.com"
+          python watch.py
+
+      - name: Commit state on exit
+        if: always()
+        run: |
+          git config user.name "ayao-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add watchstate.json 2>/dev/null || exit 0
+          git diff --cached --quiet && exit 0
+          git commit -m "watch state $(date -u +%FT%TZ)" || exit 0
+          git pull --rebase --autostash origin main || true
+          git push || true
