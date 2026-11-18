@@ -15,6 +15,7 @@ EP_DETAIL = BAPI + '/friendly/future/copy-trade/lead-portfolio/detail?portfolioI
 EP_QLIST = BAPI + '/friendly/future/copy-trade/home-page/query-list'
 EP_POS = BAPI + '/friendly/future/copy-trade/lead-data/positions?portfolioId='
 EP_TRADE = BAPI + '/public/future/copy-trade/lead-portfolio/trade-history'
+EP_ORDER = BAPI + '/friendly/future/copy-trade/lead-portfolio/order-history'
 UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
       'Referer': 'https://www.binance.com/', 'Origin': 'https://www.binance.com',
       'Content-Type': 'application/json'}
@@ -94,8 +95,42 @@ def diffPositions(oldL, newL):
     return evs
 
 
-STAT_NOISE = ('盈亏变动', '收益率变动', '保证金变动', '最新交易')  # filtered out per user request
+def fetch_orders(pid, page_size=30):
+    """聚合订单（对应 App「最新交易记录」）。必须 POST，GET 会报「参数非法」。"""
+    return getJSON(EP_ORDER, {'portfolioId': pid, 'pageNumber': 1, 'pageSize': page_size})
 
+
+def orders_to_events(raw):
+    """把 order-history 转成页面用的交易事件"""
+    lst = ((raw or {}).get('data') or {}).get('list') or []
+    out = []
+    for o in lst:
+        side = (o.get('side') or '').upper()
+        ps = (o.get('positionSide') or '').upper()
+        if ps == 'LONG':
+            typ = '开仓' if side == 'BUY' else '平仓'
+        elif ps == 'SHORT':
+            typ = '开仓' if side == 'SELL' else '平仓'
+        else:
+            typ = '开仓'
+        ts = int(o.get('orderTime') or 0) / 1000.0
+        qty = float(o.get('executedQty') or 0)
+        px = float(o.get('avgPrice') or 0)
+        out.append({
+            'time': datetime.fromtimestamp(ts, CST).strftime('%m-%d %H:%M:%S') if ts else '',
+            'type': typ,
+            'symbol': o.get('symbol'),
+            'side': '做多' if ps == 'LONG' else '做空',
+            'qty': o.get('executedQty'),
+            'price': o.get('avgPrice'),
+            'value': round(qty * px, 2),
+            'pnl': o.get('totalPnl') or 0,
+            'key': '%s|%s|%s' % (o.get('orderTime'), o.get('symbol'), o.get('executedQty')),
+        })
+    return out
+
+
+STAT_NOISE = ('盈亏变动', '收益率变动', '保证金变动', '最新交易')  # filtered out per user request
 WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
 ICON = {'开仓': '🟢', '平仓': '🔴', '加仓': '🔵', '减仓': '🟠', '最新交易': '⏱'}
 
@@ -196,20 +231,28 @@ def main():
     if q:
         newprof.update({k: v for k, v in q.items() if k != 'chartItems' and v is not None})
 
+    order_raw = None
+    try:
+        order_raw = fetch_orders(pid, 30)
+    except Exception as e:
+        errs.append('order:' + str(e)[:80])
+
     evs = diffPositions(snap.get('positions') or [], pos)
     # 注意：熬鹰已关闭持仓公开（positionShow=False），positions 恒为空、trade-history 恒为空。
     # 因此绝不能用 lastTradeTime 变化去推"有新交易"——那条通知没有任何币种/方向/数量，
     # 属于误导。只保留真正有持仓明细时 diff 出来的开平仓事件。
-    if not pos:
-        evs = []
+    order_evs = orders_to_events(order_raw)
+    old_evs = [e for e in (snap.get('events') or []) if e.get('type') not in STAT_NOISE]
+    seen = {e.get('key') for e in order_evs}
+    merged = order_evs + [e for e in old_evs if e.get('key') not in seen and e.get('key')] + evs
 
     newsnap = {
         'portfolioId': pid, 'name': name,
         'profile': newprof,
         'curve': chart,
         'positions': pos,
-        'events': [e for e in (snap.get('events') or []) if e.get('type') not in STAT_NOISE]
-                  + evs,
+        'events': merged[:120],
+        'orders': order_evs[:30],
         'lastError': ' | '.join(errs)[:200],
         'lastOk': '' if errs else datetime.now(CST).strftime('%Y-%m-%d %H:%M:%S'),
         'serverTime': datetime.now(CST).strftime('%Y-%m-%d %H:%M:%S'),
