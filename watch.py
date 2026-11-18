@@ -21,6 +21,7 @@ BAPI = 'https://www.binance.com/bapi/futures/v1'
 EP_ORDER = BAPI + '/friendly/future/copy-trade/lead-portfolio/order-history'
 WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
 STATE_FILE = 'watchstate.json'
+LOG_FILE = 'watchlog.txt'
 
 UA = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -43,7 +44,24 @@ UID = os.environ.get('WXPUSHER_UID', '').strip()
 
 
 def log(msg):
-    print('[%s] %s' % (datetime.now(CST).strftime('%H:%M:%S'), msg), flush=True)
+    line = '[%s] %s' % (datetime.now(CST).strftime('%m-%d %H:%M:%S'), msg)
+    print(line, flush=True)
+    try:
+        with open(LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(line + '\n')
+    except Exception:
+        pass
+
+
+def trim_log(keep=300):
+    try:
+        with open(LOG_FILE, encoding='utf-8') as f:
+            lines = f.readlines()
+        if len(lines) > keep:
+            with open(LOG_FILE, 'w', encoding='utf-8') as f:
+                f.writelines(lines[-keep:])
+    except Exception:
+        pass
 
 
 def post_json(url, body, timeout=20):
@@ -165,7 +183,8 @@ def git_commit_state(msg='state'):
     """把状态文件提交回仓库，防止任务中断后重复推送"""
     import subprocess
     try:
-        subprocess.run(['git', 'add', STATE_FILE], capture_output=True, timeout=30)
+        trim_log()
+        subprocess.run(['git', 'add', STATE_FILE, LOG_FILE], capture_output=True, timeout=30)
         c = subprocess.run(['git', 'commit', '-m', '%s %s' % (msg, datetime.now(CST).strftime('%m-%d %H:%M'))],
                            capture_output=True, text=True, timeout=60)
         if c.returncode != 0:
@@ -224,6 +243,7 @@ def main():
             seen = [key_of(o) for o in orders[:10]]
         save_state({'lastTs': last_ts, 'seen': seen, 'note': 'init'})
         log('首次初始化，游标 = %s（不推送历史）' % last_ts)
+        git_commit_state('init')
         # 启动确认单独发一条
         if TOKEN and UID:
             try:
