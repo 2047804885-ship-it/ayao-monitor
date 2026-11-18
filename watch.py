@@ -318,6 +318,10 @@ def main():
     except Exception as e:
         log('断档检查失败（忽略）: %s' % str(e)[:80])
 
+    # 启动即落盘一次，便于从仓库直接确认任务活着
+    save_state({'lastTs': last_ts, 'seen': seen, 'note': 'start'})
+    git_commit_state('start')
+
     while time.time() - t0 < MAX_HOURS * 3600:
         try:
             orders = fetch_orders(20)
