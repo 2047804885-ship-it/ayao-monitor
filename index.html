@@ -63,7 +63,7 @@
   <h2 class="t">当前持仓</h2>
   <div class="scroller" id="pos"><div class="empty">等待数据…</div></div>
 
-  <h2 class="t">交易动态（云端自动捕捉开/平/加/减仓）</h2>
+  <h2 class="t">最新交易记录（真实开/平仓订单）</h2>
   <div class="card" id="events"><div class="empty">暂无动态。</div></div>
 
   <h2 class="t">推送配置</h2>
@@ -202,7 +202,7 @@ function render(d){
     document.getElementById('pos').innerHTML = '<table><tr><th>币种</th><th>方向</th><th>杠杆</th><th>数量</th><th>开仓价</th><th>标记价</th><th>未实现盈亏</th><th>收益率</th></tr>'+rows+'</table>';
   } else {
     var msg = d.portfolioId ? '当前无持仓（空仓）' : '暂无组合数据';
-    if(p.positionShow === false) msg = '该交易员已隐藏当前持仓，币安不提供实时持仓数据；下方「交易动态」由盈亏/保证金变动推断捕捉。';
+    if(p.positionShow === false) msg = '该交易员已隐藏当前持仓，币安不提供实时持仓明细；下方「最新交易记录」来自真实成交订单，仍然完整可用。';
     document.getElementById('pos').innerHTML = '<div class="empty">'+msg+'</div>';
   }
 
@@ -216,7 +216,8 @@ function render(d){
       var body;
       if(e.symbol){
         body = '<b>'+esc(e.symbol)+'</b> '+side(e.side)+(e.lever?(' '+fmt(e.lever)+'x'):'')+
-               (e.qty?(' · 数量 '+fmt(e.qty)):'')+(e.price?(' · 价 '+fmt(e.price)):'');
+               (e.qty?(' · 数量 '+fmt(e.qty)):'')+(e.price?(' · 均价 '+fmt(e.price)):'')+
+               (e.value?(' · 价值 '+money(e.value)):'')+(e.pnl?(' · 盈亏 '+money(e.pnl)):'');
       } else if(e.qty !== '' && e.qty != null){
         body = '变化量 ' + fmt(e.qty);
       } else {
@@ -226,7 +227,7 @@ function render(d){
              '<span><span class="badge '+cls+'">'+esc(e.type)+'</span>'+body+'</span></div>';
     }).join('');
   } else {
-    box.innerHTML = '<div class="empty">暂无动态。云端每分钟检查一次，发现仓位或盈亏变化会记录在这里。</div>';
+    box.innerHTML = '<div class="empty">暂无交易记录。云端每 10 分钟同步一次订单，有开/平仓会显示在这里。</div>';
   }
 
   // 新事件提示音
