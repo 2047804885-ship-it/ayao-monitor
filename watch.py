@@ -138,7 +138,7 @@ def build_html(items, title_suffix=''):
     return ''.join(parts)
 
 
-def push(items):
+def push(items, title_suffix=''):
     if not TOKEN or not UID:
         log('!! 缺少 WXPUSHER_TOKEN / WXPUSHER_UID，跳过推送')
         return False
@@ -146,7 +146,7 @@ def push(items):
     summary = '熬鹰 %d 笔: ' % len(items) + ' / '.join(acts[:3])
     payload = {
         'appToken': TOKEN,
-        'content': build_html(items),
+        'content': build_html(items, title_suffix),
         'summary': summary[:95],
         'contentType': 3,
         'uids': [UID],
