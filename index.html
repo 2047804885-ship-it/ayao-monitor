@@ -84,6 +84,7 @@
 // ===== 云端数据源（多线路竞速，全部为国内可直连域名）=====
 var REPO = '2047804885-ship-it/ayao-monitor';
 var SOURCES = [
+  {n:'Pages同源',    u:'snap.json'},
   {n:'GitHub-API',   u:'https://api.github.com/repos/' + REPO + '/contents/snap.json', api:true},
   {n:'jsDelivr-CF',  u:'https://testingcf.jsdelivr.net/gh/' + REPO + '@main/snap.json'},
   {n:'jsDelivr-Fast',u:'https://fastly.jsdelivr.net/gh/' + REPO + '@main/snap.json'},
