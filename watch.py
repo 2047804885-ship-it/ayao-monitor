@@ -258,8 +258,8 @@ def main():
             seen = [key_of(o) for o in orders[:10]]
         save_state({'lastTs': last_ts, 'seen': seen, 'note': 'init'})
         log('首次初始化，游标 = %s（不推送历史）' % last_ts)
-        # 启动确认单独发一条
-        if TOKEN and UID:
+        # 启动确认（默认不发，避免每 5.6 小时一次噪音；需要时设 AYAO_STARTUP_MSG=1）
+        if TOKEN and UID and os.environ.get('AYAO_STARTUP_MSG') == '1':
             try:
                 body = {
                     'appToken': TOKEN,
