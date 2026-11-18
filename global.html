@@ -83,6 +83,24 @@ tr:last-child td{border-bottom:none;}
 .live i b{color:var(--ink);}
 .combo td{white-space:normal;text-align:left;}
 
+/* ===== 组合与应对（可展开卡片）===== */
+.cbo{background:#fff;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;overflow:hidden;}
+.cbo summary{list-style:none;cursor:pointer;padding:11px 12px;position:relative;}
+.cbo summary::-webkit-details-marker{display:none;}
+.cbo summary::after{content:'\25BE';position:absolute;right:11px;top:9px;color:#98A2B0;font-size:14px;line-height:1;transition:transform .2s;}
+.cbo[open] summary::after{transform:rotate(180deg);}
+.cbo .cb-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;padding-right:16px;}
+.cbo .cb-a{font-size:11px;background:#EEF3F8;color:#1E5C8C;border-radius:5px;padding:2px 7px;font-weight:700;white-space:nowrap;}
+.cbo .cb-st{font-size:14px;font-weight:700;}
+.cbo .cb-tip{font-size:11.5px;color:var(--sub);line-height:1.55;padding-right:16px;}
+.cbo .cb-body{padding:0 12px 12px;border-top:1px solid var(--line);margin-top:2px;padding-top:10px;}
+.cbo .cb-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:560px){.cbo .cb-grid{grid-template-columns:1fr;}}
+.cbo ul{margin:0;padding-left:15px;}
+.cbo li{font-size:12px;line-height:1.7;color:#3A4450;margin-bottom:5px;}
+.cbo li:last-child{margin-bottom:0;}
+.cbo .cb-his{font-size:11px;color:var(--sub);margin-top:9px;padding-top:7px;border-top:1px dashed var(--line);line-height:1.6;}
+
 /* ===== 搜索框 ===== */
 .sbox{position:relative;margin:0 0 10px;}
 .sbox input{width:100%;padding:10px 34px 10px 32px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:#fff;color:var(--ink);outline:none;font-family:inherit;}
@@ -190,13 +208,14 @@ tr:last-child td{border-bottom:none;}
       <h3>📖 怎么读这些指标（先看这三条）</h3>
       <ol>
         <li><b>没有绝对好坏，只有“合不合适”。</b>同一组数字，放在不同发展阶段、不同经济结构的国家身上，结论可能完全相反。发展中国家 6% 的增速正常，发达国家 2% 就算不错。</li>
-        <li><b>单看一个指标会骗人，必须组合看。</b>高通胀 + 高失业＝滞胀（最难熬）；高增长 + 高负债＝泡沫式繁荣（隐患在后）。后面有“指标组合速查表”。</li>
+        <li><b>单看一个指标会骗人，必须组合看。</b>高通胀 + 高失业＝滞胀（最难熬）；高增长 + 高负债＝泡沫式繁荣（隐患在后）。后面有“指标组合与应对”。</li>
         <li><b>看趋势比看绝对值重要。</b>一个从 2% 涨到 6% 的通胀率，比一个长期稳定在 6% 的通胀率危险得多——前者说明“预期”在失控。</li>
       </ol>
     </div>
 
-    <h2>指标组合速查表</h2>
-    <div class="scroller" style="margin-bottom:12px"><table class="combo" id="comboTable"></table></div>
+    <h2>指标组合与应对</h2>
+    <div class="hint" style="margin:-2px 0 9px">点击任意组合展开 ——「国家层面怎么做」与「个人层面怎么做」</div>
+    <div id="comboList"></div>
 
     <h2>逐个指标看懂（含义 · 高低 · 影响）</h2>
     <div class="sbox" id="box-edu">
@@ -435,11 +454,77 @@ function reapply(){
 
 /* ================= 指标科普 ================= */
 const COMBO=[
-  ['高增长','低通胀','金发女孩（最理想）','好找工作、工资在涨、资产在涨，是加杠杆买房买股的好时候','#1E7A32'],
-  ['高增长','高通胀','过热','短期繁荣，但加息在路上；别追高，别背浮动利率的债','#B7791F'],
-  ['低增长','高通胀','滞胀（最难熬）','工资不涨物价涨，股债双杀；现金为王，减少负债','#B03A2E'],
-  ['低增长','低通胀/通缩','衰退或萧条','保住工作最重要，别负债；等降息信号，但别急着抄底','#6B7C93'],
-  ['高增长','高负债+资产泡沫','泡沫式繁荣','看着热闹，隐患在后；警惕“这次不一样”的说法','#C0562E']
+{a:'高增长 + 低通胀', st:'金发女孩（最理想）', c:'#1E7A32',
+ tip:'好找工作、工资在涨、资产在涨，是加杠杆买房买股的好时候。',
+ gov:['货币逐步退出刺激、留足“弹药”，盯资产价格而不只盯 CPI',
+      '财政趁收入好修复资产负债表、建立债务缓冲，别把周期性收入当永久支出',
+      '宏观审慎上调逆周期资本缓冲、收紧按揭成数，防止信贷催生泡沫',
+      '把景气窗口用在结构改革上：教育、科研、产业升级'],
+ per:['这是跳槽、谈薪、转行成本最低的窗口，优先提升可迁移技能',
+      '可适度加杠杆买自住房，但别在情绪最热时满仓；股债配置向权益倾斜',
+      '负债锁定固定利率、拉长久期，别用浮动利率追高',
+      '留 6~12 个月现金；奖金别当永久收入来定支出'],
+ his:'美国 1995—2000、中国 2003—2007、美国 2018'},
+
+{a:'高增长 + 高通胀', st:'过热', c:'#B7791F',
+ tip:'短期繁荣，但加息在路上；别追高，别背浮动利率的债。',
+ gov:['货币果断加息、收流动性，宁可增长降一点也不让通胀预期脱锚（沃尔克时刻）',
+      '财政削减补贴性支出，避免财政与货币同时踩油门',
+      '供给端放开能源、粮食、劳动力，打击囤积，用供给手段降成本',
+      '明确通胀目标与路径，防止工资—物价螺旋'],
+ per:['优先偿还或置换浮动利率债务，这是最容易受伤的地方',
+      '从高估值成长股转向现金流、资源、黄金等抗通胀资产',
+      '争取与物价挂钩的调薪，提升议价能力',
+      '大额支出趁早，但别借钱消费'],
+ his:'美国 1968—1970、中国 2007—2008、巴西 2010—2011'},
+
+{a:'低增长 + 高通胀', st:'滞胀（最难熬）', c:'#B03A2E',
+ tip:'工资不涨物价涨，股债双杀；现金为王，减少负债。',
+ gov:['两难：加息压通胀会加深衰退，降息救增长会火上浇油，只能“紧货币 + 定向宽财政”',
+      '坚持紧缩锚定预期，同时用前瞻指引避免硬着陆',
+      '定向补贴低收入群体与能源粮食，别搞全面价格管制（会造成短缺）',
+      '保供、能源多元化、劳动力市场改革，提升潜在增速'],
+ per:['这是最需要“现金为王”的阶段，储备 12 个月以上开支',
+      '去杠杆是第一优先级，尤其浮动利率和短久期债务',
+      '降低股票仓位（尤其高估值），增配短债、货基、黄金',
+      '保住主业、发展第二收入，别在这个阶段裸辞创业'],
+ his:'美国 1973—1980、英国 1970 年代、2022 欧洲能源危机'},
+
+{a:'低增长 + 低通胀/通缩', st:'衰退或萧条', c:'#6B7C93',
+ tip:'保住工作最重要，别负债；等降息信号，但别急着抄底。',
+ gov:['快速大幅降息 + QE，别像日本 1990 年代那样犹豫拖延',
+      '逆周期扩张财政，直接给居民发钱、减税比修桥修路见效快',
+      '及时注资银行、隔离坏账，防止信贷收缩自我强化',
+      '允许僵尸企业出清，同时保住就业与技能培训'],
+ per:['稳定压倒一切，别在衰退期裸辞',
+      '通缩期债务实际变重，优先还清高息债',
+      '现金和长久期国债是赢家；股票分批定投，别一次性抄底',
+      '延迟大额支出（房价还会跌），但别停止投资自己'],
+ his:'日本 1990 年代、美国 2008—2009、欧洲 2011—2013'},
+
+{a:'高增长 + 高负债 + 资产泡沫', st:'泡沫式繁荣', c:'#C0562E',
+ tip:'看着热闹，隐患在后；警惕“这次不一样”的说法。',
+ gov:['宏观审慎：上调逆周期资本缓冲、收紧按揭成数、限制影子银行',
+      '不必为泡沫加息（会误伤实体），用定向工具给过热部门降温',
+      '趁景气压降债务率，别用土地财政继续加杠杆',
+      '提前建好坏账处置与房企重组框架，别等崩了再救'],
+ per:['别用杠杆追涨：泡沫期最容易“高位接盘 + 高杠杆”双杀',
+      '看现金流：租售比、租金回报率脱离合理区间时，风险在积累',
+      '保流动性：留足现金，别把全部身家压在一套房上',
+      '听到“这次不一样”“永远涨”，就是该减仓的信号'],
+ his:'日本 1989、美国 2006—2007、中国部分城市 2016—2021'},
+
+{a:'低增长 + 低通胀 + 高债务', st:'资产负债表衰退', c:'#5B6472',
+ tip:'不涨不跌但很难受：年轻人就业难、资产不涨，债务却一分不少。',
+ gov:['核心是修复资产负债表：财政兜底银行坏账，中央加杠杆置换地方与企业债务',
+      '维持超低利率甚至负利率，靠“金融抑制”（利率长期低于名义增速）慢慢消化债务',
+      '赤字花在能提升潜在增速的地方（育儿、科研），别重复修基建',
+      '最难的是扭转“不敢花、不敢投”的通缩心态，需要可信的长期承诺'],
+ per:['别急着加杠杆买房，房价可能长期横盘甚至阴跌',
+      '优先降负债、提现金流；资产偏防御（债、黄金、海外分散）',
+      '重视技能与副业，因为工资增长会长期停滞',
+      '降低对“资产升值致富”的预期，转向现金流收入'],
+ his:'日本 1997—2012、欧债危机后的意大利与希腊'}
 ];
 
 const EDU=[
@@ -544,11 +629,32 @@ const KEYECO=[['China','中国'],['United States','美国'],['Japan','日本'],[
 let EDUCHIP='all', EDUQ='';
 
 function renderCombo(){
-  $('comboTable').innerHTML =
-    '<tr><th>增长</th><th>物价</th><th>经济状态</th><th>对普通人意味着什么</th></tr>'+
-    COMBO.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td>
-      <td class="st" style="color:${r[4]}">${r[2]}</td>
-      <td style="color:#4B5563;font-weight:400">${r[3]}</td></tr>`).join('');
+  $('comboList').innerHTML = COMBO.map((o,i)=>`
+    <details class="cbo"${i===0?' open':''}>
+      <summary>
+        <div class="cb-top"><span class="cb-a">${o.a}</span><span class="cb-st" style="color:${o.c}">${o.st}</span></div>
+        <div class="cb-tip">${o.tip}</div>
+      </summary>
+      <div class="cb-body">
+        <div class="cb-grid">
+          <div class="ec neu"><h4>🏛️ 国家层面怎么做</h4><ul>${o.gov.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+          <div class="ec neu"><h4>🧑 个人层面怎么做</h4><ul>${o.per.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        </div>
+        <div class="cb-his">📚 历史镜鉴：${o.his}</div>
+      </div>
+    </details>`).join('');
+}
+
+/* 组合卡片按关键词过滤（与科普卡片共用搜索词） */
+function filterCombo(q){
+  const n = norm(q);
+  let hit = 0;
+  document.querySelectorAll('#comboList .cbo').forEach(el=>{
+    const ok = !n || norm(el.textContent).includes(n);
+    el.style.display = ok ? '' : 'none';
+    if(ok) hit++;
+  });
+  return hit;
 }
 
 function liveLine(e){
@@ -566,7 +672,7 @@ function liveLine(e){
 
 function renderEdu(){
   renderCombo();
-  filterRows('comboTable', EDUQ);
+  const ch = filterCombo(EDUQ);
   const n = norm(EDUQ);
   $('eduChips').innerHTML =
     `<div class="chip ${EDUCHIP==='all'?'on':''}" onclick="jumpEdu('all')">全部</div>`+
@@ -576,9 +682,9 @@ function renderEdu(){
     (!n || norm(e.name+e.tag+e.def+e.calc+e.hi+e.lo+e.note).includes(n))
   );
   const c = $('cnt-edu');
-  if(c) c.textContent = n ? `匹配 ${list.length} 个指标` : '';
+  if(c) c.textContent = n ? `匹配 ${ch} 个组合 · ${list.length} 个指标` : '';
   if(!list.length){
-    $('eduList').innerHTML = '<div class="empty">没有找到相关指标，换个关键词试试（如 通胀 / 失业 / 债务 / 逆差）</div>';
+    $('eduList').innerHTML = ch ? '' : '<div class="empty">没有找到相关指标，换个关键词试试（如 通胀 / 失业 / 债务 / 逆差）</div>';
     return;
   }
   $('eduList').innerHTML = list.map(e=>{
