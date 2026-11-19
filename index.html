@@ -218,7 +218,7 @@ function render(d){
       if(e.symbol){
         body = '<b>'+esc(e.symbol)+'</b> '+side(e.side)+(e.lever?(' '+fmt(e.lever)+'x'):'')+
                (e.qty?(' · 数量 '+fmt(e.qty)):'')+(e.price?(' · 均价 '+fmt(e.price)):'')+
-               (e.value?(' · 价值 '+money(e.value)):'')+(e.pnl?(' · 盈亏 '+money(e.pnl)):'');
+               (e.value?(' · 价值 $'+Number(e.value).toLocaleString('zh-CN',{maximumFractionDigits:0})):'')+(e.pnl?(' · 盈亏 '+money(e.pnl)):'');
       } else if(e.qty !== '' && e.qty != null){
         body = '变化量 ' + fmt(e.qty);
       } else {
