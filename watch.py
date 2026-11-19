@@ -20,8 +20,9 @@ CST = timezone(timedelta(hours=8))
 BAPI = 'https://www.binance.com/bapi/futures/v1'
 EP_ORDER = BAPI + '/friendly/future/copy-trade/lead-portfolio/order-history'
 WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
-STATE_FILE = 'watchstate.json'
-LOG_FILE = 'watchlog.txt'
+NAME = os.environ.get('AYAO_NAME', '熬鹰资本')
+STATE_FILE = os.environ.get('AYAO_STATE', 'watchstate.json')
+LOG_FILE = os.environ.get('AYAO_LOG', 'watchlog.txt')
 
 UA = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -128,7 +129,7 @@ def fmt_price(v):
 
 def build_html(items, title_suffix=''):
     parts = ['<div style="font-family:-apple-system,\'PingFang SC\',sans-serif;font-size:14px;line-height:1.65">',
-             '<div style="font-size:16px;font-weight:700;color:#1F2937;margin-bottom:8px">🐼 熬鹰资本 · 最新交易%s</div>' % title_suffix]
+             '<div style="font-size:16px;font-weight:700;color:#1F2937;margin-bottom:8px">🐼 %s · 最新交易%s</div>' % (NAME, title_suffix)]
     for it in items:
         act, icon = classify(it.get('side'), it.get('positionSide'))
         sym = it.get('symbol') or ''
@@ -161,7 +162,7 @@ def push(items, title_suffix=''):
         log('!! 缺少 WXPUSHER_TOKEN / WXPUSHER_UID，跳过推送')
         return False
     acts = [classify(i.get('side'), i.get('positionSide'))[0] + i.get('symbol', '') for i in items]
-    summary = '熬鹰 %d 笔: ' % len(items) + ' / '.join(acts[:3])
+    summary = '%s %d 笔: ' % (NAME, len(items)) + ' / '.join(acts[:3])
     payload = {
         'appToken': TOKEN,
         'content': build_html(items, title_suffix),
