@@ -59,3 +59,31 @@ jobs:
           tail -20 watchlog.txt 2>/dev/null || echo "(no log)"
           echo "--- state ---"
           cat watchstate.json 2>/dev/null || echo "(no state)"
+
+      # 保险层：正常结束时 python 已经触发下一棒；这里只在失败/被取消时补触发，
+      # 避免「进程没跑到结尾就死了 → 链条断掉」
+      - name: Chain next run on failure
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os, json, urllib.request
+          tok = os.environ.get('GH_TOKEN', '')
+          repo = os.environ.get('GITHUB_REPOSITORY', '')
+          if not tok:
+              print('no token, skip')
+              raise SystemExit(0)
+          url = 'https://api.github.com/repos/%s/actions/workflows/watch.yml/dispatches' % repo
+          req = urllib.request.Request(
+              url, data=b'{"ref":"main","inputs":{"mode":"watch"}}', method='POST',
+              headers={'Authorization': 'Bearer ' + tok,
+                       'Accept': 'application/vnd.github+json',
+                       'Content-Type': 'application/json',
+                       'User-Agent': 'ayao-chain'})
+          try:
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  print('chained next run:', r.status)
+          except Exception as e:
+              print('chain failed:', e)
+          PY
