@@ -1,0 +1,59 @@
+name: Watchdog
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: ayao-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ensure a watcher is alive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os, json, urllib.request
+
+          tok = os.environ.get('GH_TOKEN', '')
+          repo = os.environ.get('GITHUB_REPOSITORY', '')
+          H = {'Authorization': 'Bearer ' + tok,
+               'Accept': 'application/vnd.github+json',
+               'User-Agent': 'ayao-watchdog'}
+
+          def get(path):
+              req = urllib.request.Request('https://api.github.com/repos/%s/%s' % (repo, path), headers=H)
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  return json.loads(r.read().decode())
+
+          runs = get('actions/runs?status=in_progress&per_page=50').get('workflow_runs', [])
+          alive = [r for r in runs if r.get('name', '').startswith('Ayao Watch')]
+          if alive:
+              print('watcher alive:', alive[0]['id'], alive[0].get('created_at'))
+              raise SystemExit(0)
+
+          pend = get('actions/runs?status=pending&per_page=50').get('workflow_runs', [])
+          queued = [r for r in pend if r.get('name', '').startswith('Ayao Watch')]
+          if queued:
+              print('watcher queued, wait:', queued[0]['id'])
+              raise SystemExit(0)
+
+          print('NO watcher running -> dispatching one')
+          body = json.dumps({'ref': 'main', 'inputs': {'mode': 'watch'}}).encode()
+          req = urllib.request.Request(
+              'https://api.github.com/repos/%s/actions/workflows/watch.yml/dispatches' % repo,
+              data=body, method='POST',
+              headers=dict(H, **{'Content-Type': 'application/json'}))
+          with urllib.request.urlopen(req, timeout=20) as r:
+              print('dispatched:', r.status)
+          PY
