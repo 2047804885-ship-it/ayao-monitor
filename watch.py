@@ -335,7 +335,9 @@ def main():
         except Exception as e:
             err_n += 1
             log('轮询失败(%d): %s' % (err_n, str(e)[:100]))
-            time.sleep(min(60, 5 * err_n))
+            # 币安 bapi 常返回 11012005「系统正忙」，属瞬时错误，快速重试即可，
+            # 不要做长退避，否则会把推送延迟拉到几分钟
+            time.sleep(min(POLL, 5))
 
         if time.time() - last_commit > 600:
             save_state({'lastTs': last_ts, 'seen': seen})
