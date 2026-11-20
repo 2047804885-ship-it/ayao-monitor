@@ -21,7 +21,13 @@ if __name__ == '__main__':
     smart = pm.judge_smart(rows)
 
     print('分析 %s ...' % sym)
-    r = pm.analyze_coin(sym, smart)
+    st = pm.stat(sym) or {}
+    fund = None
+    try:
+        fund = pm.funding_rate(sym)
+    except Exception:
+        pass
+    r = pm.analyze_coin(sym, smart, dealer_raw=st.get('raw'), funding=fund)
     if not r:
         print('!! %s 未产出信号（投票未通过或被日线过滤）' % sym)
         sys.exit(1)
