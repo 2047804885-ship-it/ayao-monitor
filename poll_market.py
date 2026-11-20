@@ -2,58 +2,53 @@
 """
 聪明钱共识 v3 —— 只盯主流币 + 真正会推送
 
-数据源 1（主）：币安官方「大户持仓比」聚合数据（fapi.binance.com，runner 可直连）
-  - topLongShortPositionRatio：大户持仓量多空比（聪明钱方向）
-  - globalLongShortAccountRatio：散户账户多空比（反向指标）
-  - takerlongshortRatio：主动成交买卖比（即时动能）
-数据源 2（补充）：跟单排行榜高胜率交易员的最近成交（trade-history POST 接口）
-输出 consensus.json + 微信推送（WxPusher）
+数据源：Gate.io USDT 永续 contract_stats（与 market.html 页面同源，CORS 开放、runner 可直连）
+  top_lsr_size    大户持仓量多空比（多单占比，0.5 = 多空平衡，<0.5 偏空）
+  top_lsr_account 大户账户多空比
+  lsr_account     全市场(散户)账户多空比
+  lsr_taker       主动成交买卖比
+  long_liq_usd / short_liq_usd  24h 多空爆仓额
 
-v3 相比 v2 的关键修复：
-1. 币种收窄到 22 个主流币（原来 30 个里混了 WIF/SEI/TIA/FET/RNDR 等二线，容易噪音）
-2. 门槛从「score>=4」的绝对分制，改成「百分位 + 双条件确认」：
-   v2 的问题是 top 多空比常年 1.2~1.6、12h 变化多为 ±0.1，
-   只有「top>=1.5 且 chg>=0.25」这种极端组合才够 4 分，实测 hitCount 长期为 0。
-3. 加上微信推送 + 6 小时去重（同一币同方向 6 小时内只推一次），
-   避免刷屏，也避免推送完全发不出去。
+⚠️ v2 为什么从来没推送过（两个致命 bug）：
+   1. 用 fapi.binance.com —— GitHub Actions 的 IP 被币安 451 地区封锁，**所有请求全失败**，
+      所以 hitCount 恒为 0，永远没有信号，也就永远没有推送。
+   2. 即使能拿到数据，门槛也是「绝对分 >= 4」，只有 top>=1.5 且 12h 变化>=0.25 这种
+      极端组合才够分；而真实强度中位数只有 0.16，实测触发率 ≈ 0%。
+   3. poll_market.py 里根本没有推送代码，只写 consensus.json。
+
+v3 的做法：
+   - 换回 Gate.io（和页面同源，runner 可达）
+   - 门槛改成「横截面百分位」：每次扫 22 个主流币，只取强度最高的前 15%（约 3 个）
+     再加散户背离 / 位置极端做确认，天然自适应市场冷热
+   - 真正接上微信推送 + 6 小时去重
 """
 import json
 import os
 import time
 import ssl
 import urllib.request
-from collections import defaultdict
 
-FAPI = 'https://fapi.binance.com/futures/data'
-BAPI = 'https://www.binance.com/bapi/futures/v1'
-EP_QLIST = BAPI + '/friendly/future/copy-trade/home-page/query-list'
-EP_TRADE = BAPI + '/public/future/copy-trade/lead-portfolio/trade-history'
+GATE = 'https://api.gateio.ws/api/v4/futures/usdt'
 WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
 
-UA = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0',
-    'Referer': 'https://www.binance.com/',
-    'Content-Type': 'application/json',
-    'clienttype': 'web',
-}
+UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0'}
 CTX = ssl.create_default_context()
 CTX.check_hostname = False
 CTX.verify_mode = ssl.CERT_NONE
 
-# ===== 只看主流币 =====
-# 挑选标准：币安 USDT 永续里流动性最好、共识最强的一批。
-# 剔除：新上线小币、meme 二线、已经边缘化的老币。
+# ===== 只看主流币（与 market.html 的 CORE + 部分 MAJOR 对齐）=====
 MAJORS = [
-    'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT',
-    'ADAUSDT', 'TRXUSDT', 'LINKUSDT', 'AVAXUSDT', 'LTCUSDT', 'BCHUSDT',
-    'DOTUSDT', 'UNIUSDT', 'SUIUSDT', 'APTUSDT', 'NEARUSDT', 'ARBUSDT',
-    'OPUSDT', 'ATOMUSDT', 'FILUSDT', 'ETCUSDT',
+    'BTC_USDT', 'ETH_USDT', 'SOL_USDT', 'BNB_USDT', 'XRP_USDT', 'DOGE_USDT',
+    'ADA_USDT', 'TRX_USDT', 'LINK_USDT', 'AVAX_USDT', 'LTC_USDT', 'BCH_USDT',
+    'DOT_USDT', 'UNI_USDT', 'SUI_USDT', 'APT_USDT', 'NEAR_USDT', 'ARB_USDT',
+    'OP_USDT', 'ATOM_USDT', 'FIL_USDT', 'ETC_USDT',
 ]
-# 三大权重币：单独看，它们的信号优先级最高
-HEAVY = {'BTCUSDT', 'ETHUSDT', 'SOLUSDT'}
+HEAVY = {'BTC_USDT', 'ETH_USDT', 'SOL_USDT'}   # 三大权重，信号优先展示
 
-STATE_FILE = 'market_state.json'   # 推送去重状态
-DEDUP_HOURS = 6                    # 同币同方向 6 小时内不重复推
+STATE_FILE = 'market_state.json'
+DEDUP_HOURS = 6
+TOP_PCT = 0.15          # 只取强度最高的前 15%
+MAX_PUSH = 4            # 单次最多推送几条
 
 
 def get(url, timeout=12):
@@ -62,180 +57,108 @@ def get(url, timeout=12):
         return json.loads(resp.read().decode('utf-8'))
 
 
-def post(url, body, timeout=12):
-    r = urllib.request.Request(url, data=json.dumps(body).encode(), headers=UA)
-    with urllib.request.urlopen(r, timeout=timeout, context=CTX) as resp:
-        return json.loads(resp.read().decode('utf-8'))
-
-
-def f(v, d=3):
+def stat(sym):
+    """单币结构数据；失败返回 None"""
     try:
-        return round(float(v), d)
-    except Exception:
-        return None
-
-
-def whale_signal(sym):
-    """大户 vs 散户的结构判断，返回 None 或信号 dict
-
-    v3 打分思路（相对分，不是绝对分）：
-      - 大户多空比相对 26 小时前的变化幅度（标准化）= 主因子
-      - 大户与散户的方向背离 = 加分项
-      - 主动买卖盘 = 即时动能确认
-      - 只有同时满足「方向一致 + 至少两项确认」才出信号
-    """
-    try:
-        top = get('%s/topLongShortPositionRatio?symbol=%s&period=1h&limit=26' % (FAPI, sym))
-        glob = get('%s/globalLongShortAccountRatio?symbol=%s&period=1h&limit=26' % (FAPI, sym))
-        taker = get('%s/takerlongshortRatio?symbol=%s&period=1h&limit=8' % (FAPI, sym))
+        st = get('%s/contract_stats?contract=%s&interval=1h&limit=30' % (GATE, sym), timeout=15)
     except Exception as e:
         print('  %s 拉取失败: %s' % (sym, e))
         return None
-    if not isinstance(top, list) or len(top) < 25:
+    if not isinstance(st, list) or len(st) < 24:
         return None
 
-    series = [f(x['longShortRatio']) for x in top if f(x['longShortRatio']) is not None]
-    if len(series) < 24:
-        return None
+    ser = [float(x['top_lsr_size']) for x in st]
+    now = ser[-1]
+    prev = ser[-13] if len(ser) >= 13 else ser[0]
+    chg = now - prev
 
-    top_now = series[-1]
-    top_prev = series[-13]          # 12 小时前
-    top_chg = round(top_now - top_prev, 3)
+    # 用「小时级平均波动 × 6」做标准化单位，得到 12h 变化的相对强度
+    diffs = [abs(ser[i] - ser[i - 1]) for i in range(1, len(ser))]
+    unit = max((sum(diffs) / len(diffs)) * 6, 0.02)
+    strength = abs(chg) / unit
 
-    # 相对变化率：用 26 小时的历史波动做标准化，避免"绝对阈值"卡死
-    diffs = [abs(series[i] - series[i - 1]) for i in range(1, len(series))]
-    avg_move = (sum(diffs) / len(diffs)) if diffs else 0
-    # 12h 变化相当于多少倍的"小时级平均波动"
-    vol_unit = max(avg_move * 6, 0.05)   # 下限 0.05，防止静市时过度敏感
-    strength = abs(top_chg) / vol_unit
+    # 位置：离 0.5（多空平衡）多远
+    dist = abs(now - 0.5)
 
-    glob_now = f(glob[-1]['longShortRatio']) if isinstance(glob, list) and glob else None
-    tk_now = f(taker[-1]['buySellRatio']) if isinstance(taker, list) and taker else None
+    # 散户多空比（>1 散户偏多）
+    try:
+        glob = float(st[-1]['lsr_account'])
+    except Exception:
+        glob = None
+    # 主动买卖比用 6 小时均值压噪（单点噪音极大）
+    try:
+        tk = sum(float(x['lsr_taker']) for x in st[-6:]) / 6
+    except Exception:
+        tk = None
+    # 24h 爆仓结构：>0 空头被爆为主，<0 多头被爆为主
+    ll = sum(float(x.get('long_liq_usd') or 0) for x in st[-24:])
+    sl = sum(float(x.get('short_liq_usd') or 0) for x in st[-24:])
+    liq_bias = ((sl - ll) / (sl + ll)) if (sl + ll) > 0 else 0.0
 
-    side = None
-    if top_chg > 0:
-        side = 'LONG'
-    elif top_chg < 0:
-        side = 'SHORT'
-    if side is None:
-        return None
-
-    score = 0
-    reasons = []
-
-    # ---- 1) 主因子：大户持仓结构的变化强度 ----
-    if strength >= 3.0:
-        score += 3
-        reasons.append('12h 内大户多空比 %+.2f（%.1f 倍常态波动），主力明显加仓' % (top_chg, strength))
-    elif strength >= 1.8:
-        score += 2
-        reasons.append('12h 内大户多空比 %+.2f（%.1f 倍常态波动），资金在动' % (top_chg, strength))
-    elif strength >= 1.2:
-        score += 1
-        reasons.append('12h 内大户多空比 %+.2f，略有异动' % top_chg)
-    else:
-        return None      # 波动不够，直接不看作信号
-
-    # ---- 2) 绝对位置：不要逆着大结构做 ----
-    if side == 'LONG' and top_now >= 1.2:
-        score += 1
-        reasons.append('大户持仓量多空比 %.2f，本身偏多' % top_now)
-    elif side == 'SHORT' and top_now <= 0.95:
-        score += 1
-        reasons.append('大户持仓量多空比 %.2f，本身偏空' % top_now)
-
-    # ---- 3) 散户背离：大户加多但散户在做空（或反之）----
-    if glob_now is not None:
-        if side == 'LONG' and glob_now < 1.0:
-            score += 2
-            reasons.append('散户账户多空比 %.2f（散户偏空），与大户加多方向相反' % glob_now)
-        elif side == 'SHORT' and glob_now > 1.3:
-            score += 2
-            reasons.append('散户账户多空比 %.2f（散户偏多），与大户加空方向相反' % glob_now)
-
-    # ---- 4) 主动成交确认 ----
-    if tk_now is not None:
-        if side == 'LONG' and tk_now >= 1.05:
-            score += 1
-            reasons.append('主动买盘占优 %.2f' % tk_now)
-        elif side == 'SHORT' and tk_now <= 0.95:
-            score += 1
-            reasons.append('主动卖盘占优 %.2f' % tk_now)
-
-    # 门槛：至少 3 分（=强波动 或 中等波动+一项确认）
-    if score < 3:
-        return None
+    try:
+        px = float(st[-1]['mark_price'])
+    except Exception:
+        px = None
 
     return {
-        'coin': sym, 'side': side, 'score': score,
-        'topRatio': top_now, 'topChg': top_chg, 'strength': round(strength, 2),
-        'globRatio': glob_now, 'taker': tk_now,
-        'reasons': reasons,
+        'coin': sym, 'now': now, 'chg': chg, 'strength': round(strength, 3),
+        'dist': round(dist, 3), 'glob': glob, 'taker': round(tk, 3) if tk else None,
+        'liqBias': round(liq_bias, 2), 'price': px,
+        'side': 'LONG' if chg > 0 else ('SHORT' if chg < 0 else None),
     }
 
 
-def trader_recent_trades():
-    """排行榜高胜率交易员的最近成交（尽力而为，可能为空）"""
-    try:
-        d = post(EP_QLIST, {'pageNumber': 1, 'pageSize': 20, 'timeRange': '90D', 'dataType': 'ROI',
-                            'favoriteOnly': False, 'hideFull': False, 'nickname': '',
-                            'order': 'DESC', 'apiKeyOnly': False}, timeout=15)
-        lst = (d.get('data') or {}).get('list') or []
-    except Exception:
+def judge(rows):
+    """横截面判定：挑出强度最高的前 15%，再用背离/位置/爆仓做确认"""
+    valid = [r for r in rows if r and r['side']]
+    if not valid:
         return []
-    good = [t for t in lst
-            if float(t.get('winRate') or 0) >= 55
-            and int(t.get('currentCopyCount') or 0) >= 50
-            and float(t.get('roi') or 0) >= 20]
-    good.sort(key=lambda t: -float(t.get('winRate') or 0))
-    agg = defaultdict(list)
-    got = 0
-    for t in good[:20]:
-        pid = str(t.get('leadPortfolioId') or '')
-        try:
-            r = post(EP_TRADE, {'portfolioId': pid, 'timeType': '7D', 'pageNo': 1, 'pageSize': 15}, timeout=10)
-            data = r.get('data') or {}
-            tl = data.get('list') or []
-        except Exception:
+    ranked = sorted(valid, key=lambda r: -r['strength'])
+    n_top = max(2, int(round(len(ranked) * TOP_PCT)))
+    out = []
+    for r in ranked[:n_top]:
+        score = 0
+        reasons = []
+
+        # 1) 相对强度（横截面）
+        score += 2
+        reasons.append('12h 大户持仓变动 %+.3f，在 %d 个主流币里排前 %d（%.2f 倍常态波动）'
+                       % (r['chg'], len(ranked), n_top, r['strength']))
+
+        # 2) 方向与位置一致性
+        if r['side'] == 'SHORT' and r['now'] < 0.85:
+            score += 1
+            reasons.append('大户多单占比 %.1f%%，本身已偏空且还在减多' % (r['now'] * 100))
+        elif r['side'] == 'LONG' and r['now'] > 0.6:
+            score += 1
+            reasons.append('大户多单占比 %.1f%%，本身偏多且还在加多' % (r['now'] * 100))
+
+        # 3) 散户背离（最有价值的确认）
+        if r['glob'] is not None:
+            if r['side'] == 'SHORT' and r['glob'] >= 2.0:
+                score += 2
+                reasons.append('散户多空比 %.2f（散户重仓看多），大户却在撤退——典型派发' % r['glob'])
+            elif r['side'] == 'LONG' and r['glob'] <= 1.3:
+                score += 2
+                reasons.append('散户多空比 %.2f（散户不看好），大户却在加多——筹码转移' % r['glob'])
+
+        # 4) 爆仓结构印证
+        if r['side'] == 'SHORT' and r['liqBias'] > 0.3:
+            score += 1
+            reasons.append('24h 爆仓以空头为主（%.0f%%），下跌中存在逼空风险'
+                           % ((r['liqBias'] + 1) / 2 * 100))
+        elif r['side'] == 'LONG' and r['liqBias'] < -0.3:
+            score += 1
+            reasons.append('24h 爆仓以多头为主（%.0f%%），反弹前多头已被清洗'
+                           % ((1 - r['liqBias']) / 2 * 100))
+
+        if score < 3:
             continue
-        if not tl:
-            continue
-        got += 1
-        for x in tl[:10]:
-            sym = x.get('symbol') or ''
-            side = str(x.get('positionSide') or '').upper()
-            if side in ('BUY', 'SELL'):
-                side = 'LONG' if side == 'BUY' else 'SHORT'
-            if not sym or side not in ('LONG', 'SHORT'):
-                continue
-            # 只留主流币的交易员动作
-            if sym not in MAJORS:
-                continue
-            agg[sym + '|' + side].append({
-                'name': t.get('nickname') or ('#' + pid[-4:]),
-                'winRate': round(float(t.get('winRate') or 0), 1),
-                'roi': round(float(t.get('roi') or 0), 1),
-                'action': x.get('orderType') or x.get('side'),
-                'price': x.get('price'),
-                'qty': x.get('qty'),
-                'time': x.get('time') or x.get('updateTime'),
-                'symbol': sym, 'side': side,
-            })
-    signals = []
-    for key, lst2 in agg.items():
-        if len(lst2) < 2:
-            continue
-        sym, side = key.split('|')
-        names = [x['name'] for x in lst2]
-        signals.append({
-            'coin': sym, 'side': side, 'count': len(set(names)),
-            'winAvg': round(sum(x['winRate'] for x in lst2) / len(lst2), 1),
-            'traders': lst2[:8],
-            'source': 'trade-history',
-        })
-    signals.sort(key=lambda s: (-s['count'], -s['winAvg']))
-    print('trade-history: %d 个交易员有成交记录' % got)
-    return signals
+        r['score'] = score
+        r['reasons'] = reasons[:3]
+        out.append(r)
+    out.sort(key=lambda r: (0 if r['coin'] in HEAVY else 1, -r['score'], -r['strength']))
+    return out[:MAX_PUSH]
 
 
 # ================= 推送 =================
@@ -256,57 +179,40 @@ def save_state(st):
 
 
 def cn(sym):
-    return sym.replace('USDT', '')
+    return sym.replace('_USDT', '')
 
 
-def fmt_market_signal(s):
-    side_cn = '做多 🟢' if s['side'] == 'LONG' else '做空 🔴'
-    star = '⭐' if s['coin'] in HEAVY else ''
-    lines = [
-        "<div style='margin:10px 0;padding:9px 11px;border-left:3px solid %s;background:#f8f9fa'>"
-        % ('#0ecb81' if s['side'] == 'LONG' else '#f6465d'),
-        "<b>%s%s %s</b> <span style='color:#888;font-size:12px'>强度 %d</span><br>"
-        % (star, cn(s['coin']), side_cn, s['score']),
-    ]
-    for r in s['reasons'][:3]:
-        lines.append("<span style='font-size:13px;color:#333'>· %s</span><br>" % r)
-    lines.append("</div>")
-    return ''.join(lines)
+def fmt_signal(s):
+    color = '#0ecb81' if s['side'] == 'LONG' else '#f6465d'
+    star = '⭐ ' if s['coin'] in HEAVY else ''
+    side_cn = '大户在加多 🟢' if s['side'] == 'LONG' else '大户在减多/加空 🔴'
+    h = ['<div style="margin:10px 0;padding:9px 11px;border-left:3px solid %s;background:#f8f9fa">'
+         % color,
+         '<b>%s%s</b> <span style="color:#888;font-size:12px">强度 %d</span><br>'
+         % (star, cn(s['coin']), s['score']),
+         '<span style="font-size:13px;color:#333">%s</span><br>' % side_cn]
+    for r in s['reasons']:
+        h.append('<span style="font-size:12px;color:#555">· %s</span><br>' % r)
+    h.append('</div>')
+    return ''.join(h)
 
 
-def wxpush_market(signals, trader_sigs):
-    """把主流币机会信号推到微信"""
+def wxpush(signals):
     token = os.environ.get('WXPUSHER_TOKEN', '').strip()
     uid = os.environ.get('WXPUSHER_UID', '').strip()
     if not token or not uid:
         return 'skipped (no WXPUSHER_TOKEN/WXPUSHER_UID)'
-
-    if not signals and not trader_sigs:
+    if not signals:
         return 'nothing to push'
 
-    body = []
-    if signals:
-        body.append("<h3>📡 主流币机会信号</h3>")
-        for s in signals[:5]:
-            body.append(fmt_market_signal(s))
-    if trader_sigs:
-        body.append("<h3>👥 高胜率交易员动向</h3>")
-        for t in trader_sigs[:3]:
-            side_cn = '做多 🟢' if t['side'] == 'LONG' else '做空 🔴'
-            body.append(
-                "<div style='margin:8px 0;font-size:13px'>"
-                "<b>%s %s</b> · %d 位交易员同向 · 平均胜率 %.0f%%</div>"
-                % (cn(t['coin']), side_cn, t['count'], t['winAvg']))
-
-    head = signals[0] if signals else trader_sigs[0]
+    body = ''.join(fmt_signal(s) for s in signals)
+    hd = signals[0]
     summary = '主流币信号 %d 条：%s %s' % (
-        len(signals) + len(trader_sigs), cn(head['coin']),
-        '多' if head['side'] == 'LONG' else '空')
-
+        len(signals), cn(hd['coin']), '加多' if hd['side'] == 'LONG' else '减多/加空')
     payload = {
         'appToken': token,
-        'content': "<h3>📡 熬鹰 · 主流币机会</h3>" + ''.join(body) +
-                   "<p style='color:#888;font-size:12px'>只监控 %d 个主流币 · %s</p>"
+        'content': "<h3>📡 熬鹰 · 主流币聪明钱</h3>" + body +
+                   "<p style='color:#888;font-size:12px'>监控 %d 个主流币 · %s 北京时间</p>"
                    % (len(MAJORS), time.strftime('%m-%d %H:%M', time.localtime(time.time() + 8 * 3600))),
         'summary': summary[:95],
         'contentType': 3,
@@ -325,66 +231,46 @@ def wxpush_market(signals, trader_sigs):
         return 'err:' + str(e)[:80]
 
 
-def dedup(signals, state):
-    """同一币同方向 DEDUP_HOURS 内只推一次；返回需要推送的新信号"""
-    now = int(time.time())
-    win = DEDUP_HOURS * 3600
-    fresh = []
-    for s in signals:
-        key = s['coin'] + '|' + s['side']
-        last = state.get(key, 0)
-        if now - last > win:
-            fresh.append(s)
-            s['_key'] = key
-    return fresh
-
-
 def main():
     t0 = time.time()
-    signals = []
-    ok = 0
+    rows = []
     for sym in MAJORS:
-        s = whale_signal(sym)
-        if s:
-            signals.append(s)
-            ok += 1
-    # 核心币优先、强度高优先
-    signals.sort(key=lambda s: (
-        0 if s['coin'] in HEAVY else 1,
-        -s['score'], -abs(s['topChg'])))
+        rows.append(stat(sym))
 
-    trader_sigs = trader_recent_trades()
+    okn = len([r for r in rows if r])
+    signals = judge(rows)
 
     out = {
         'time': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() + 8 * 3600)) + ' 北京时间',
         'ts': int(time.time()),
         'scanned': len(MAJORS),
-        'hitCount': ok,
-        'signals': signals[:15],
-        'traderSignals': trader_sigs[:10],
+        'ok': okn,
+        'hitCount': len(signals),
+        'source': 'gateio',
+        'signals': signals,
         'cost': round(time.time() - t0, 1),
     }
     with open('consensus.json', 'w', encoding='utf-8') as f_:
         json.dump(out, f_, ensure_ascii=False, indent=1)
 
-    # ---- 推送 ----
+    # ---- 去重后推送 ----
     state = load_state()
-    fresh = dedup(signals, state)
-    fresh_trader = [t for t in trader_sigs if t['coin'] in HEAVY][:3]
-    push_res = 'none'
-    if fresh or fresh_trader:
-        push_res = wxpush_market(fresh, fresh_trader)
-        if push_res == 'ok':
-            now = int(time.time())
+    now_ts = int(time.time())
+    win = DEDUP_HOURS * 3600
+    fresh = [s for s in signals if now_ts - state.get(s['coin'] + '|' + s['side'], 0) > win]
+    res = 'none'
+    if fresh:
+        res = wxpush(fresh)
+        if res == 'ok':
             for s in fresh:
-                state[s['_key']] = now
+                state[s['coin'] + '|' + s['side']] = now_ts
             save_state(state)
 
-    print('consensus done: coins=%d hit=%d fresh=%d traderSignals=%d cost=%.1fs push=%s'
-          % (len(MAJORS), ok, len(fresh), len(trader_sigs), time.time() - t0, push_res))
-    for s in signals[:8]:
-        print('  %s %s score=%d top=%.2f(%+.2f,%.1fx) glob=%s'
-              % (s['coin'], s['side'], s['score'], s['topRatio'], s['topChg'], s['strength'], s['globRatio']))
+    print('consensus done: coins=%d ok=%d hit=%d fresh=%d cost=%.1fs push=%s'
+          % (len(MAJORS), okn, len(signals), len(fresh), time.time() - t0, res))
+    for s in signals:
+        print('  %s %s score=%d top=%.3f(%+.3f,%.2fx) glob=%s'
+              % (s['coin'], s['side'], s['score'], s['now'], s['chg'], s['strength'], s['glob']))
 
 
 if __name__ == '__main__':
