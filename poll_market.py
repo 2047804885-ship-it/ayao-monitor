@@ -94,7 +94,17 @@ def stat(sym):
         'glob': glob, 'taker': round(tk, 3) if tk else None,
         'liqBias': round(liq_bias, 2),
         'side': 'LONG' if chg > 0 else ('SHORT' if chg < 0 else None),
+        'raw': st,          # 原始 contract_stats，供庄家层使用
     }
+
+
+def funding_rate(sym):
+    """当前资金费率（小数）。负数=空头付钱给多头。"""
+    try:
+        d = get('%s/contracts/%s' % (GATE, sym), timeout=12)
+        return float(d.get('funding_rate'))
+    except Exception:
+        return None
 
 
 def judge_smart(rows):
@@ -139,8 +149,8 @@ def judge_smart(rows):
     return out
 
 
-def analyze_coin(sym, smart):
-    """对一个币做完整三层 TA + 投票"""
+def analyze_coin(sym, smart, dealer_raw=None, funding=None):
+    """对一个币做完整五层 TA + 右侧优先投票"""
     try:
         cs4 = klines(sym, '4h', 260)
     except Exception as e:
@@ -152,13 +162,44 @@ def analyze_coin(sym, smart):
     L1 = ta.layer_trend(cs4)
     L2 = ta.layer_momentum(cs4)
     L3 = ta.layer_structure(cs4)
-    layers = [L1, L2, L3]
+    L4 = ta.layer_volprice(cs4)
+    layers = [L1, L2, L3, L4]
+
+    # 缠论层（分型/笔/中枢/背驰）——回测与趋势共振 73.4%，全场最高
+    LC = None
+    try:
+        LC = ta.layer_chan(cs4)
+    except Exception as e:
+        print('  %s 缠论层失败: %s' % (sym, e))
+    if LC:
+        layers.append(LC)
+
+    # 订单流层（1m K 线构造主动买卖压力）——实时资金行为
+    LO = None
+    try:
+        m1 = klines(sym, '1m', 400)
+        if len(m1) >= 120:
+            LO = ta.layer_orderflow(m1)
+    except Exception as e:
+        print('  %s 订单流层失败: %s' % (sym, e))
+    if LO:
+        layers.append(LO)
+
+    # 庄家层（资金面实时情报，历史无法回测但信息价值高）
+    LD = None
+    if dealer_raw:
+        try:
+            LD = ta.layer_dealer(dealer_raw, funding=funding)
+        except Exception as e:
+            print('  %s 庄家层失败: %s' % (sym, e))
+    if LD:
+        layers.append(LD)
 
     v = ta.vote(layers, smart=smart.get(sym))
     if not v:
         return None
 
-    # 1d 大周期方向过滤：逆大势时不推（除非置信度很高）
+    # ---- 日线大周期共振过滤（强化右侧交易）----
     trend_1d = None
     try:
         cs1d = klines(sym, '1d', 220)
@@ -169,10 +210,14 @@ def analyze_coin(sym, smart):
     except Exception:
         pass
 
-    if trend_1d and trend_1d != 'NEUTRAL' and trend_1d != v['side']:
-        if v['confidence'] < 70:
-            print('  %s 逆日线方向(%s vs %s)，跳过' % (sym, v['side'], trend_1d))
+    # 右侧：日线方向必须一致或中性，逆日线一律不推
+    if v['tradeType'] == '右侧' and trend_1d and trend_1d != 'NEUTRAL':
+        if trend_1d != v['side']:
+            print('  %s 右侧信号但逆日线(%s vs %s)，跳过' % (sym, v['side'], trend_1d))
             return None
+
+    # 左侧：允许逆日线，但必须是极可靠的衰竭信号（已在 vote 里卡过）
+    if trend_1d and trend_1d != 'NEUTRAL' and trend_1d != v['side']:
         v['counterTrend'] = True
 
     px = cs4[-1]['c']
@@ -184,6 +229,11 @@ def analyze_coin(sym, smart):
         'side': v['side'],
         'confidence': v['confidence'],
         'votes': v['votes'],
+        'tradeType': v.get('tradeType', '右侧'),
+        'rightSide': v.get('rightSide', True),
+        'grade': v.get('grade', 'C'),
+        'chanAgree': v.get('chanAgree', False),
+        'chanAgainst': v.get('chanAgainst', False),
         'agreeLayers': v['agreeLayers'],
         'opposeLayers': v['opposeLayers'],
         'neutralLayers': v.get('neutralLayers', []),
@@ -194,6 +244,9 @@ def analyze_coin(sym, smart):
         'atrPct': round(atr_pct, 2),
         'layers': [x for x in layers if x],
         'smart': smart.get(sym),
+        'dealer': LD,
+        'chan': LC,
+        'of': LO,
     }
 
 
@@ -237,25 +290,59 @@ def fmt_signal(s):
          % (color, bg)]
 
     # ---- 主观结论（大字）----
+    ttype = s.get('tradeType', '右侧')
+    if ttype == '右侧':
+        ttag = ('<span style="font-size:11px;font-weight:600;color:#0b7a4b;'
+                'background:#d9f7e8;padding:1px 5px;border-radius:3px;'
+                'margin-left:6px;vertical-align:middle">右侧顺势</span>')
+    else:
+        ttag = ('<span style="font-size:11px;font-weight:600;color:#8a5a00;'
+                'background:#fff3cd;padding:1px 5px;border-radius:3px;'
+                'margin-left:6px;vertical-align:middle">左侧逆势·高风险</span>')
+
+    # ---- 质量等级（回测标定：A/B 才有缠论共振，C 无）----
+    gr = s.get('grade', 'C')
+    GRD = {
+        'A':  ('A 级', '#0b7a4b', '#d9f7e8'),   # 缠论共振 + ADX≥45  回测 76.5%
+        'B':  ('B 级', '#0369a1', '#e0f2fe'),   # 缠论共振            回测 69.4%
+        'C':  ('C 级', '#b45309', '#fef3c7'),   # 缠论明确反对
+        'C-': ('C- 级', '#9a3412', '#ffedd5'),  # 缠论无表态（回测 52%，差）
+        'L':  ('左侧特批', '#8a5a00', '#fff3cd'),
+    }
+    gtxt, gcol, gbg = GRD.get(gr, GRD['C'])
+    gtag = ('<span style="font-size:11px;font-weight:600;color:%s;'
+            'background:%s;padding:1px 5px;border-radius:3px;'
+            'margin-left:6px;vertical-align:middle">%s</span>'
+            % (gcol, gbg, gtxt))
+
     h.append('<div style="font-size:17px;font-weight:700;color:%s;margin-bottom:4px">'
-             '%s%s  %s %s</div>'
-             % (color, arrow, star, cn(s['coin']), side_cn))
+             '%s%s  %s %s%s%s</div>'
+             % (color, arrow, star, cn(s['coin']), side_cn, ttag, gtag))
 
     px_txt = ('%.6g' % s['price']) if s['price'] else '—'
     h.append('<div style="font-size:13px;color:#333;margin-bottom:6px">'
-             '现价 %s · 置信度 <b>%d</b> · 三层投票 <b>%s</b> 一致'
-             % (px_txt, s['confidence'], s['votes']))
+             '现价 %s · 置信度 <b>%d</b> · %d 层投票 <b>%s</b> 一致'
+             % (px_txt, s['confidence'], len(s['layers']), s['votes']))
     if s.get('counterTrend'):
         h.append(' · <span style="color:#f59e0b">逆日线</span>')
     h.append('</div>')
 
-    # ---- 一致层的核心结论 ----
+    # ---- 一致层的核心结论（按权重从高到低，缠论/订单流优先露头）----
+    ORDER = ['趋势', '缠论', '结构', '订单流', '庄家', '量价', '动量']
     h.append('<div style="font-size:13px;color:#111;margin-bottom:6px">')
-    for L in s['layers']:
-        if L['layer'] in s['agreeLayers']:
-            head = L['notes'][0] if L['notes'] else ''
+    for name in ORDER:
+        for L in s['layers']:
+            if L['layer'] != name:
+                continue
+            if name not in s['agreeLayers']:
+                continue
+            # 缠论/订单流：取最有信息量的整段（中枢位置、背驰、主动买占比）
+            if name in ('缠论', '订单流'):
+                head = '；'.join(L['notes'][:3])
+            else:
+                head = L['notes'][0] if L['notes'] else ''
             h.append('<div style="margin:1px 0">• <b>%s</b>：%s</div>'
-                     % (L['layer'], esc(head)))
+                     % (name, esc(head)))
     if s.get('smart') and '聪明钱' in s['agreeLayers']:
         h.append('<div style="margin:1px 0">• <b>聪明钱</b>：%s</div>'
                  % esc(s['smart']['reasons'][0]))
@@ -347,23 +434,33 @@ def wxpush(signals):
 def main():
     t0 = time.time()
 
-    # 1) 先取持仓结构（聪明钱票）
+    # 1) 先取持仓结构（庄家层 + 聪明钱）
     rows = []
+    raws = {}
+    funds = {}
     for sym in MAJORS:
-        rows.append(stat(sym))
+        r = stat(sym)
+        rows.append(r)
+        if r and r.get('raw'):
+            raws[sym] = r['raw']
+        funds[sym] = funding_rate(sym)
     okn = len([r for r in rows if r])
     smart = judge_smart(rows)
 
-    # 2) 逐个币做三层技术分析
+    # 2) 逐个币做五层技术分析（右侧优先）
     signals = []
     for sym in MAJORS:
-        r = analyze_coin(sym, smart)
+        r = analyze_coin(sym, smart, dealer_raw=raws.get(sym), funding=funds.get(sym))
         if r:
             signals.append(r)
         time.sleep(0.15)   # 控制请求频率
 
-    # 核心币优先、置信度高优先
-    signals.sort(key=lambda s: (0 if s['coin'] in HEAVY else 1, -s['confidence']))
+    # 排序：右侧优先 > 核心币 > 置信度
+    signals.sort(key=lambda s: (
+        0 if s.get('tradeType') == '右侧' else 1,
+        {'A': 0, 'B': 1, 'C': 2, 'C-': 3, 'L': 4}.get(s.get('grade'), 5),
+        0 if s['coin'] in HEAVY else 1,
+        -s['confidence']))
     signals = signals[:MAX_PUSH]
 
     out = {
@@ -373,7 +470,7 @@ def main():
         'ok': okn,
         'hitCount': len(signals),
         'source': 'gateio',
-        'engine': 'TA-3layer-vote',
+        'engine': 'TA-5layer-rightside',
         'signals': signals,
         'cost': round(time.time() - t0, 1),
     }
