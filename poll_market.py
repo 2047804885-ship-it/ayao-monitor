@@ -46,6 +46,12 @@ STATE_FILE = 'market_state.json'
 DEDUP_HOURS = 6
 MAX_PUSH = 4
 
+# ---- 组合层面刹车：防止"七个币全看空"被误读成七重确认 ----
+# 单边行情下所有币同涨同跌，同向信号越多，越可能只是在押同一个宏观方向。
+CORR_TRIGGER = 4      # 同向信号达到这个数就触发收敛
+CORR_KEEP = 3         # 收敛后最多保留几条
+CORR_KEEP_AB = 2      # A/B 级最多占几席（A 再多也不全押，留一个给其他币）
+
 
 def get(url, timeout=15):
     r = urllib.request.Request(url, headers=UA)
@@ -403,7 +409,80 @@ def fmt_signal(s):
     return ''.join(h)
 
 
-def wxpush(signals):
+def brake(signals):
+    """组合风险刹车：同向过多时收敛，避免在一个方向上重复押注
+
+    返回 (保留列表, 刹车信息 dict 或 None)
+    """
+    if not signals:
+        return signals, None
+
+    longs = [s for s in signals if s['side'] == 'LONG']
+    shorts = [s for s in signals if s['side'] == 'SHORT']
+
+    # 多空兼有 = 天然对冲，不是单边押注，不刹车
+    if longs and shorts:
+        return signals, None
+
+    side, group = ('LONG', longs) if longs else ('SHORT', shorts)
+    if len(group) < CORR_TRIGGER:
+        return signals, None
+
+    # 按等级挑（signals 进来时已排好序：右侧 > 等级 > 核心币 > 置信度）
+    keep = []
+    keep_coins = set()
+    # A/B 级优先保，但不超过 CORR_KEEP_AB，防止全是 A 时又变成满仓
+    for s in group:
+        if len(keep) >= CORR_KEEP_AB:
+            break
+        if s.get('grade') in ('A', 'B'):
+            keep.append(s)
+            keep_coins.add(s['coin'])
+    # 剩余名额按原顺序补齐（A 级不够时也能补够数量）
+    for s in group:
+        if len(keep) >= CORR_KEEP:
+            break
+        if s['coin'] in keep_coins:
+            continue
+        keep.append(s)
+        keep_coins.add(s['coin'])
+
+    dropped = [s for s in group if s['coin'] not in keep_coins]
+    kept = keep[:MAX_PUSH]
+
+    info = {
+        'side': side,
+        'total': len(group),
+        'kept': [cn(s['coin']) for s in kept],
+        'dropped': [cn(s['coin']) for s in dropped],
+        'droppedGrades': [(cn(s['coin']), s.get('grade')) for s in dropped],
+    }
+    return kept, info
+
+
+def fmt_brake(info):
+    """刹车提示卡片，放在所有信号之前，防止误读"""
+    if not info:
+        return ''
+    side_cn = '看多' if info['side'] == 'LONG' else '看空'
+    col = '#0ecb81' if info['side'] == 'LONG' else '#f6465d'
+    drop_txt = '、'.join('%s(%s)' % (c, g) for c, g in info['droppedGrades'][:8])
+    h = ['<div style="margin:10px 0;padding:9px 12px;border:1px dashed #f59e0b;'
+         'background:#fffbeb;border-radius:4px;font-size:12px;color:#78350f;'
+         'line-height:1.65">']
+    h.append('<b>⚠️ 组合刹车已生效</b><br>')
+    h.append('本次<b style="color:%s">%s</b>方向的信号多达 <b>%d</b> 个。'
+             '主流币高相关，同向过多往往只是押同一个宏观方向，不是多次独立确认。'
+             % (col, side_cn, info['total']))
+    h.append('<br>只推等级最高的 <b>%d</b> 个：<b>%s</b>'
+             % (len(info['kept']), '、'.join(info['kept']) or '—'))
+    if drop_txt:
+        h.append('<br>已压制：%s' % drop_txt)
+    h.append('</div>')
+    return ''.join(h)
+
+
+def wxpush(signals, brake_info=None):
     token = os.environ.get('WXPUSHER_TOKEN', '').strip()
     uid = os.environ.get('WXPUSHER_UID', '').strip()
     if not token or not uid:
@@ -411,11 +490,17 @@ def wxpush(signals):
     if not signals:
         return 'nothing to push'
 
-    body = ''.join(fmt_signal(s) for s in signals)
+    body = fmt_brake(brake_info) + ''.join(fmt_signal(s) for s in signals)
     hd = signals[0]
-    summary = '%s %s · 置信度 %d · 共 %d 条' % (
-        cn(hd['coin']), '看多' if hd['side'] == 'LONG' else '看空',
-        hd['confidence'], len(signals))
+    if brake_info:
+        summary = '⚠️组合刹车 %d个%s信号→只推%d个 · 首位 %s %s' % (
+            brake_info['total'], '看多' if brake_info['side'] == 'LONG' else '看空',
+            len(brake_info['kept']), cn(hd['coin']),
+            '看多' if hd['side'] == 'LONG' else '看空')
+    else:
+        summary = '%s %s · 置信度 %d · 共 %d 条' % (
+            cn(hd['coin']), '看多' if hd['side'] == 'LONG' else '看空',
+            hd['confidence'], len(signals))
     payload = {
         'appToken': token,
         'content': "<h3>📡 熬鹰 · 主流币信号</h3>" + body +
@@ -464,12 +549,18 @@ def main():
             signals.append(r)
         time.sleep(0.15)   # 控制请求频率
 
-    # 排序：右侧优先 > 核心币 > 置信度
+    # 排序：右侧优先 > 等级 > 核心币 > 置信度
     signals.sort(key=lambda s: (
         0 if s.get('tradeType') == '右侧' else 1,
         {'A': 0, 'B': 1, 'C': 2, 'C-': 3, 'L': 4}.get(s.get('grade'), 5),
         0 if s['coin'] in HEAVY else 1,
         -s['confidence']))
+    raw_n = len(signals)
+    signals, brake_info = brake(signals)
+    if brake_info:
+        print('组合刹车: %s 信号 %d 个 -> 保留 %d 个，压制 %s'
+              % (brake_info['side'], brake_info['total'],
+                 len(brake_info['kept']), ','.join(brake_info['dropped'])))
     signals = signals[:MAX_PUSH]
 
     out = {
@@ -478,8 +569,10 @@ def main():
         'scanned': len(MAJORS),
         'ok': okn,
         'hitCount': len(signals),
+        'rawHitCount': raw_n,
+        'brake': brake_info,
         'source': 'gateio',
-        'engine': 'TA-5layer-rightside',
+        'engine': 'TA-7layer-rightside',
         'signals': signals,
         'cost': round(time.time() - t0, 1),
     }
@@ -493,14 +586,23 @@ def main():
     fresh = [s for s in signals if now_ts - state.get(s['coin'] + '|' + s['side'], 0) > win]
     res = 'none'
     if fresh:
-        res = wxpush(fresh)
+        # 刹车提示只列本次真正推出的币，避免"保留但已推送过"的对不上
+        bi = None
+        if brake_info:
+            fset = set(s['coin'] for s in fresh)
+            bi = dict(brake_info)
+            bi['kept'] = [c for c in brake_info['kept']
+                          if any(cn(s['coin']) == c for s in fresh)]
+            if not bi['kept']:
+                bi = None
+        res = wxpush(fresh, brake_info=bi)
         if res == 'ok':
             for s in fresh:
                 state[s['coin'] + '|' + s['side']] = now_ts
             save_state(state)
 
-    print('done: coins=%d ok=%d hit=%d fresh=%d cost=%.1fs push=%s'
-          % (len(MAJORS), okn, len(signals), len(fresh), time.time() - t0, res))
+    print('done: coins=%d ok=%d hit=%d/%d fresh=%d cost=%.1fs push=%s'
+          % (len(MAJORS), okn, len(signals), raw_n, len(fresh), time.time() - t0, res))
     for s in signals:
         print('  %-10s %-5s conf=%3d votes=%s agree=%s'
               % (cn(s['coin']), s['side'], s['confidence'], s['votes'],
