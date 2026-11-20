@@ -30,6 +30,9 @@ jobs:
           AYAO_TIMEOUT: '15'
         run: timeout 120 python poll.py || echo "poll exited non-zero, continue"
       - name: Smart money consensus
+        env:
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
         run: timeout 200 python poll_market.py || echo "market poll failed, continue"
       - name: Probe trade API
         run: timeout 90 python probe_trade.py || echo "probe failed, continue"
@@ -40,6 +43,7 @@ jobs:
           git config user.name "ayao-bot"
           git config user.email "actions@users.noreply.github.com"
           git add snap.json config.json consensus.json macro.json fx.json holdings.json
+          if [ -f market_state.json ]; then git add market_state.json; fi
           git diff --cached --quiet && echo "no change" && exit 0
           git commit -m "snapshot $(date -u +%FT%TZ)"
           git push
