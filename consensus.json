@@ -1,10 +1,10 @@
 {
- "time": "2026-11-20 23:26:12 北京时间",
- "ts": 1795188372,
+ "time": "2026-11-20 23:31:27 北京时间",
+ "ts": 1795188687,
  "scanned": 22,
  "ok": 22,
- "hitCount": 3,
- "rawHitCount": 3,
+ "hitCount": 2,
+ "rawHitCount": 2,
  "brake": null,
  "source": "gateio",
  "engine": "TA-7layer-rightside",
@@ -12,25 +12,25 @@
   {
    "coin": "LTC_USDT",
    "side": "SHORT",
-   "confidence": 87,
-   "votes": "3/7",
+   "confidence": 81,
+   "votes": "2/7",
    "tradeType": "右侧",
    "rightSide": true,
    "grade": "A",
    "chanAgree": true,
    "chanAgainst": false,
    "voteShare": 1.0,
-   "nVoted": 3,
+   "nVoted": 2,
    "agreeLayers": [
     "趋势",
-    "缠论",
-    "订单流"
+    "缠论"
    ],
    "opposeLayers": [],
    "neutralLayers": [
     "动量",
     "结构",
     "量价",
+    "订单流",
     "庄家"
    ],
    "confirm": {
@@ -40,8 +40,8 @@
    },
    "counterTrend": false,
    "trend1d": "SHORT",
-   "price": 40.23,
-   "atrPct": 2.53,
+   "price": 40.37,
+   "atrPct": 2.52,
    "layers": [
     {
      "layer": "趋势",
@@ -50,10 +50,10 @@
      "valid": true,
      "adx": 48.1,
      "adxBand": "极强趋势",
-     "ema20": 43.25817,
-     "ema50": 45.377631,
-     "ema200": 51.922835,
-     "px": 40.23,
+     "ema20": 43.271504,
+     "ema50": 45.383121,
+     "ema200": 51.924228,
+     "px": 40.37,
      "notes": [
       "均线空头排列 EMA20<EMA50<EMA200",
       "价格失守 EMA20",
@@ -65,16 +65,16 @@
      "layer": "动量",
      "side": "NEUTRAL",
      "score": -2,
-     "rsi": 22.3,
-     "macdHist": -0.51541,
-     "volRatio": 1.33,
+     "rsi": 22.7,
+     "macdHist": -0.497541,
+     "volRatio": 1.34,
      "volOk": true,
      "divergence": null,
      "notes": [
-      "MACD 柱为负（-0.5154），空头动能维持",
+      "MACD 柱为负（-0.4975），空头动能维持",
       "DIF 在 DEA 之下",
-      "近 6 根量能为 30 根均量的 1.33 倍，放量确认",
-      "RSI 22 超卖区"
+      "近 6 根量能为 30 根均量的 1.34 倍，放量确认",
+      "RSI 23 超卖区"
      ],
      "confidence": 51
     },
@@ -82,15 +82,15 @@
      "layer": "结构",
      "side": "NEUTRAL",
      "score": -1,
-     "pctB": -0.113,
+     "pctB": -0.096,
      "res": 44.77,
      "sup": null,
-     "atrPct": 2.53,
+     "atrPct": 2.52,
      "notes": [
-      "价格跌破布林下轨（%B=-0.11），短期超跌",
-      "上方阻力 44.77（距 11.29%，触碰 1 次）",
+      "价格跌破布林下轨（%B=-0.10），短期超跌",
+      "上方阻力 44.77（距 10.90%，触碰 1 次）",
       "结构下移：更低高点 + 更低低点（LH/LL）",
-      "ATR(14) 波动 2.53% / 根，止损参考 3.79%"
+      "ATR(14) 波动 2.52% / 根，止损参考 3.78%"
      ],
      "confidence": 46
     },
@@ -98,10 +98,10 @@
      "layer": "量价",
      "side": "NEUTRAL",
      "score": 0,
-     "volRatio": 1.33,
-     "pxChg6": -7.18,
+     "volRatio": 1.34,
+     "pxChg6": -6.85,
      "notes": [
-      "量价中性（价格 -7.2%/量比 1.33）"
+      "量价中性（价格 -6.9%/量比 1.34）"
      ],
      "confidence": 10
     },
@@ -130,16 +130,15 @@
     },
     {
      "layer": "订单流",
-     "side": "SHORT",
-     "score": -2,
-     "buy15": 0.435,
-     "buy60": 0.399,
-     "buy240": 0.5,
+     "side": "NEUTRAL",
+     "score": 0,
+     "buy15": 0.528,
+     "buy60": 0.446,
+     "buy240": 0.51,
      "notes": [
-      "主动买占比：15min 43% / 1h 40% / 4h 50%",
-      "短周期卖盘持续占优（1h 40%，15min 43%）"
+      "主动买占比：15min 53% / 1h 45% / 4h 51%"
      ],
-     "confidence": 44
+     "confidence": 12
     },
     {
      "layer": "庄家",
@@ -147,13 +146,13 @@
      "score": 1,
      "topLs": 0.774,
      "topChg": -0.1015,
-     "funding": -0.0007,
+     "funding": -0.0002,
      "notes": [
       "大户多单占比 77%，重仓押多",
       "大户近 12h 减多 10.1 个点（87.5%→77.4%）",
       "持仓增 10.6% 但价格下跌，空头加仓压制",
       "主动买入占优（taker 比 21.56）",
-      "资金费率 -0.0007%，多空成本均衡",
+      "资金费率 -0.0002%，多空成本均衡",
       "24h 爆仓 100% 是多头被清洗，浮筹已清"
      ],
      "confidence": 29
@@ -166,13 +165,13 @@
     "score": 1,
     "topLs": 0.774,
     "topChg": -0.1015,
-    "funding": -0.0007,
+    "funding": -0.0002,
     "notes": [
      "大户多单占比 77%，重仓押多",
      "大户近 12h 减多 10.1 个点（87.5%→77.4%）",
      "持仓增 10.6% 但价格下跌，空头加仓压制",
      "主动买入占优（taker 比 21.56）",
-     "资金费率 -0.0007%，多空成本均衡",
+     "资金费率 -0.0002%，多空成本均衡",
      "24h 爆仓 100% 是多头被清洗，浮筹已清"
     ],
     "confidence": 29
@@ -202,40 +201,39 @@
    },
    "of": {
     "layer": "订单流",
-    "side": "SHORT",
-    "score": -2,
-    "buy15": 0.435,
-    "buy60": 0.399,
-    "buy240": 0.5,
+    "side": "NEUTRAL",
+    "score": 0,
+    "buy15": 0.528,
+    "buy60": 0.446,
+    "buy240": 0.51,
     "notes": [
-     "主动买占比：15min 43% / 1h 40% / 4h 50%",
-     "短周期卖盘持续占优（1h 40%，15min 43%）"
+     "主动买占比：15min 53% / 1h 45% / 4h 51%"
     ],
-    "confidence": 44
+    "confidence": 12
    }
   },
   {
    "coin": "DOGE_USDT",
    "side": "SHORT",
-   "confidence": 84,
-   "votes": "3/7",
+   "confidence": 78,
+   "votes": "2/7",
    "tradeType": "右侧",
    "rightSide": true,
    "grade": "B",
    "chanAgree": true,
    "chanAgainst": false,
    "voteShare": 1.0,
-   "nVoted": 3,
+   "nVoted": 2,
    "agreeLayers": [
     "趋势",
-    "缠论",
-    "订单流"
+    "缠论"
    ],
    "opposeLayers": [],
    "neutralLayers": [
     "动量",
     "结构",
     "量价",
+    "订单流",
     "庄家"
    ],
    "confirm": {
@@ -245,8 +243,8 @@
    },
    "counterTrend": false,
    "trend1d": "SHORT",
-   "price": 0.05418,
-   "atrPct": 2.62,
+   "price": 0.05444,
+   "atrPct": 2.61,
    "layers": [
     {
      "layer": "趋势",
@@ -255,10 +253,10 @@
      "valid": true,
      "adx": 42.1,
      "adxBand": "极强趋势",
-     "ema20": 0.058268,
-     "ema50": 0.060738,
-     "ema200": 0.070056,
-     "px": 0.05418,
+     "ema20": 0.058293,
+     "ema50": 0.060748,
+     "ema200": 0.070059,
+     "px": 0.05444,
      "notes": [
       "均线空头排列 EMA20<EMA50<EMA200",
       "价格失守 EMA20",
@@ -270,16 +268,16 @@
      "layer": "动量",
      "side": "NEUTRAL",
      "score": -2,
-     "rsi": 23.9,
-     "macdHist": -0.000517,
-     "volRatio": 1.27,
+     "rsi": 24.6,
+     "macdHist": -0.000484,
+     "volRatio": 1.28,
      "volOk": true,
      "divergence": null,
      "notes": [
       "MACD 柱为负（-0.0005），空头动能维持",
       "DIF 在 DEA 之下",
-      "近 6 根量能为 30 根均量的 1.27 倍，放量确认",
-      "RSI 24 超卖区"
+      "近 6 根量能为 30 根均量的 1.28 倍，放量确认",
+      "RSI 25 超卖区"
      ],
      "confidence": 51
     },
@@ -287,14 +285,14 @@
      "layer": "结构",
      "side": "NEUTRAL",
      "score": 1,
-     "pctB": -0.353,
+     "pctB": -0.333,
      "res": 0.0600775,
      "sup": null,
-     "atrPct": 2.62,
+     "atrPct": 2.61,
      "notes": [
-      "价格跌破布林下轨（%B=-0.35），短期超跌",
-      "上方阻力 0.0600775（距 10.89%，触碰 4 次）",
-      "ATR(14) 波动 2.62% / 根，止损参考 3.93%"
+      "价格跌破布林下轨（%B=-0.33），短期超跌",
+      "上方阻力 0.0600775（距 10.36%，触碰 4 次）",
+      "ATR(14) 波动 2.61% / 根，止损参考 3.91%"
      ],
      "confidence": 28
     },
@@ -302,10 +300,10 @@
      "layer": "量价",
      "side": "NEUTRAL",
      "score": 0,
-     "volRatio": 1.27,
-     "pxChg6": -7.4,
+     "volRatio": 1.28,
+     "pxChg6": -6.96,
      "notes": [
-      "量价中性（价格 -7.4%/量比 1.27）"
+      "量价中性（价格 -7.0%/量比 1.28）"
      ],
      "confidence": 10
     },
@@ -334,16 +332,15 @@
     },
     {
      "layer": "订单流",
-     "side": "SHORT",
-     "score": -2,
-     "buy15": 0.407,
-     "buy60": 0.411,
-     "buy240": 0.491,
+     "side": "NEUTRAL",
+     "score": 0,
+     "buy15": 0.533,
+     "buy60": 0.463,
+     "buy240": 0.508,
      "notes": [
-      "主动买占比：15min 41% / 1h 41% / 4h 49%",
-      "短周期卖盘持续占优（1h 41%，15min 41%）"
+      "主动买占比：15min 53% / 1h 46% / 4h 51%"
      ],
-     "confidence": 44
+     "confidence": 12
     },
     {
      "layer": "庄家",
@@ -351,11 +348,11 @@
      "score": 2,
      "topLs": 0.689,
      "topChg": -0.0387,
-     "funding": -0.005,
+     "funding": -0.0048,
      "notes": [
       "大户多单占比 69%，重仓押多",
       "大户近 12h 减多 3.9 个点（72.8%→68.9%）",
-      "资金费率 -0.0050%，多空成本均衡",
+      "资金费率 -0.0048%，多空成本均衡",
       "24h 爆仓 100% 是多头被清洗，浮筹已清"
      ],
      "confidence": 43
@@ -368,11 +365,11 @@
     "score": 2,
     "topLs": 0.689,
     "topChg": -0.0387,
-    "funding": -0.005,
+    "funding": -0.0048,
     "notes": [
      "大户多单占比 69%，重仓押多",
      "大户近 12h 减多 3.9 个点（72.8%→68.9%）",
-     "资金费率 -0.0050%，多空成本均衡",
+     "资金费率 -0.0048%，多空成本均衡",
      "24h 爆仓 100% 是多头被清洗，浮筹已清"
     ],
     "confidence": 43
@@ -402,219 +399,17 @@
    },
    "of": {
     "layer": "订单流",
-    "side": "SHORT",
-    "score": -2,
-    "buy15": 0.407,
-    "buy60": 0.411,
-    "buy240": 0.491,
-    "notes": [
-     "主动买占比：15min 41% / 1h 41% / 4h 49%",
-     "短周期卖盘持续占优（1h 41%，15min 41%）"
-    ],
-    "confidence": 44
-   }
-  },
-  {
-   "coin": "BTC_USDT",
-   "side": "SHORT",
-   "confidence": 69,
-   "votes": "2/7",
-   "tradeType": "右侧",
-   "rightSide": true,
-   "grade": "C-",
-   "chanAgree": false,
-   "chanAgainst": false,
-   "voteShare": 1.0,
-   "nVoted": 2,
-   "agreeLayers": [
-    "趋势",
-    "订单流"
-   ],
-   "opposeLayers": [],
-   "neutralLayers": [
-    "动量",
-    "结构",
-    "量价",
-    "缠论",
-    "庄家"
-   ],
-   "confirm": {
-    "trend": true,
-    "volume": false,
-    "smartMoney": false
-   },
-   "counterTrend": false,
-   "trend1d": "SHORT",
-   "price": 60068.6,
-   "atrPct": 1.95,
-   "layers": [
-    {
-     "layer": "趋势",
-     "side": "SHORT",
-     "score": -4,
-     "valid": true,
-     "adx": 49.5,
-     "adxBand": "极强趋势",
-     "ema20": 63021.388007,
-     "ema50": 65639.686615,
-     "ema200": 73314.785594,
-     "px": 60068.6,
-     "notes": [
-      "均线空头排列 EMA20<EMA50<EMA200",
-      "价格失守 EMA20",
-      "ADX 49.5（极强趋势），方向向下"
-     ],
-     "confidence": 92
-    },
-    {
-     "layer": "动量",
-     "side": "NEUTRAL",
-     "score": -2,
-     "rsi": 24.8,
-     "macdHist": -248.900071,
-     "volRatio": 1.46,
-     "volOk": true,
-     "divergence": null,
-     "notes": [
-      "MACD 柱为负（-248.9001），空头动能维持",
-      "DIF 在 DEA 之下",
-      "近 6 根量能为 30 根均量的 1.46 倍，放量确认",
-      "RSI 25 超卖区"
-     ],
-     "confidence": 51
-    },
-    {
-     "layer": "结构",
-     "side": "NEUTRAL",
-     "score": -1,
-     "pctB": -0.134,
-     "res": 64055.0,
-     "sup": null,
-     "atrPct": 1.95,
-     "notes": [
-      "价格跌破布林下轨（%B=-0.13），短期超跌",
-      "上方阻力 64055（距 6.64%，触碰 1 次）",
-      "结构下移：更低高点 + 更低低点（LH/LL）",
-      "ATR(14) 波动 1.95% / 根，止损参考 2.92%"
-     ],
-     "confidence": 46
-    },
-    {
-     "layer": "量价",
-     "side": "NEUTRAL",
-     "score": 0,
-     "volRatio": 1.46,
-     "pxChg6": -4.76,
-     "notes": [
-      "量价中性（价格 -4.8%/量比 1.46）"
-     ],
-     "confidence": 10
-    },
-    {
-     "layer": "缠论",
-     "side": "NEUTRAL",
-     "score": -2,
-     "scoreParts": {
-      "笔": 0,
-      "中枢": -2,
-      "背驰": 0
-     },
-     "bisCount": 55,
-     "zhongshu": [
-      64236.2,
-      65662.3
-     ],
-     "notes": [
-      "当前笔：上行（6.203e+04→6.406e+04）",
-      "中枢区间 6.424e+04 ~ 6.566e+04",
-      "价格跌破中枢下沿（第三类卖点区）",
-      "上行反抽力度放大至前段 142%，但仍在中枢逆向段内，不计方向",
-      "缠论结论中性：力度不足以确认方向（合计 -2，需 ≥3）"
-     ],
-     "confidence": 45
-    },
-    {
-     "layer": "订单流",
-     "side": "SHORT",
-     "score": -2,
-     "buy15": 0.378,
-     "buy60": 0.369,
-     "buy240": 0.426,
-     "notes": [
-      "主动买占比：15min 38% / 1h 37% / 4h 43%",
-      "短周期卖盘持续占优（1h 37%，15min 38%）"
-     ],
-     "confidence": 44
-    },
-    {
-     "layer": "庄家",
-     "side": "NEUTRAL",
-     "score": 0,
-     "topLs": 0.817,
-     "topChg": -0.1193,
-     "funding": 0.0012,
-     "notes": [
-      "大户多单占比 82%，重仓押多",
-      "大户近 12h 减多 11.9 个点（93.6%→81.7%）",
-      "资金费率 +0.0012%，多空成本均衡",
-      "24h 爆仓多空较均衡"
-     ],
-     "confidence": 15
-    }
-   ],
-   "smart": null,
-   "dealer": {
-    "layer": "庄家",
     "side": "NEUTRAL",
     "score": 0,
-    "topLs": 0.817,
-    "topChg": -0.1193,
-    "funding": 0.0012,
+    "buy15": 0.533,
+    "buy60": 0.463,
+    "buy240": 0.508,
     "notes": [
-     "大户多单占比 82%，重仓押多",
-     "大户近 12h 减多 11.9 个点（93.6%→81.7%）",
-     "资金费率 +0.0012%，多空成本均衡",
-     "24h 爆仓多空较均衡"
+     "主动买占比：15min 53% / 1h 46% / 4h 51%"
     ],
-    "confidence": 15
-   },
-   "chan": {
-    "layer": "缠论",
-    "side": "NEUTRAL",
-    "score": -2,
-    "scoreParts": {
-     "笔": 0,
-     "中枢": -2,
-     "背驰": 0
-    },
-    "bisCount": 55,
-    "zhongshu": [
-     64236.2,
-     65662.3
-    ],
-    "notes": [
-     "当前笔：上行（6.203e+04→6.406e+04）",
-     "中枢区间 6.424e+04 ~ 6.566e+04",
-     "价格跌破中枢下沿（第三类卖点区）",
-     "上行反抽力度放大至前段 142%，但仍在中枢逆向段内，不计方向",
-     "缠论结论中性：力度不足以确认方向（合计 -2，需 ≥3）"
-    ],
-    "confidence": 45
-   },
-   "of": {
-    "layer": "订单流",
-    "side": "SHORT",
-    "score": -2,
-    "buy15": 0.378,
-    "buy60": 0.369,
-    "buy240": 0.426,
-    "notes": [
-     "主动买占比：15min 38% / 1h 37% / 4h 43%",
-     "短周期卖盘持续占优（1h 37%，15min 38%）"
-    ],
-    "confidence": 44
+    "confidence": 12
    }
   }
  ],
- "cost": 73.7
+ "cost": 72.7
 }
