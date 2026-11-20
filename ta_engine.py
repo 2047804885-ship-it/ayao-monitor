@@ -474,78 +474,630 @@ def layer_structure(cs):
 
 
 # ============================================================
-#  汇总投票
+#  第四层：量价（回测驱动：只做衰竭/背离，不做放量追涨）
 # ============================================================
-def vote(layers, smart=None):
-    """三层 + 聪明钱投票，返回最终结论
+def layer_volprice(cs):
+    """量价配合层
 
-    规则（宁可漏报不可错报）：
-      - 中性层不算反方，只稀释一致性
-      - 至少 2 层给出一致方向
-      - 反方票数必须严格小于正方
-      - 置信度不足 45 的弃掉
+    回测结论（24 币 / 4h / 10 月）：
+      ✗ 「放量确认」在 4h 是负贡献：+量比>=1.5 时胜率从 69.7% 反降到 62.8%
+      ✓ 「缩量衰竭」逻辑有效，但单独作为左侧信号胜率仍偏低（35.6%）
+    → 本层仅作加权项（权重 0.8），不主导方向
+    """
+    if len(cs) < 40:
+        return None
+    closes = [c['c'] for c in cs]
+    opens = [c['o'] for c in cs]
+    highs = [c['h'] for c in cs]
+    lows = [c['l'] for c in cs]
+    vols = [c['v'] for c in cs]
+    score = 0
+    notes = []
+
+    v6 = sum(vols[-6:]) / 6
+    v30 = sum(vols[-30:]) / 30
+    vr = v6 / v30 if v30 > 0 else 1.0
+    px_chg = (closes[-1] - opens[-6]) / opens[-6] * 100 if opens[-6] else 0
+
+    if px_chg < -1.0 and vr < 0.75:
+        score += 3
+        notes.append('缩量下跌（价格 %.1f%%/量比 %.2f），抛压衰竭'
+                     % (px_chg, vr))
+    elif px_chg > 1.0 and vr < 0.75:
+        score -= 3
+        notes.append('缩量上涨（价格 %+.1f%%/量比 %.2f），跟风盘不足，上涨虚'
+                     % (px_chg, vr))
+    elif px_chg < -1.0 and vr > 1.8:
+        score -= 2
+        notes.append('放量下跌（价格 %.1f%%/量比 %.2f），抛压真实释放'
+                     % (px_chg, vr))
+    elif px_chg > 1.0 and vr > 1.8:
+        score += 1
+        notes.append('放量上涨（价格 %+.1f%%/量比 %.2f），有资金承接'
+                     % (px_chg, vr))
+    else:
+        notes.append('量价中性（价格 %+.1f%%/量比 %.2f）' % (px_chg, vr))
+
+    if len(cs) >= 24:
+        v1 = sum(vols[-6:]) / 6
+        v2 = sum(vols[-18:-6]) / 12
+        if v2 > 0 and v1 < v2 * 0.85:
+            if max(highs[-6:]) > max(highs[-18:-6]):
+                score -= 2
+                notes.append('量价顶背离：价格创新高但成交萎缩 %.0f%%'
+                             % ((1 - v1 / v2) * 100))
+            if min(lows[-6:]) < min(lows[-18:-6]):
+                score += 2
+                notes.append('量价底背离：价格创新低但成交萎缩 %.0f%%'
+                             % ((1 - v1 / v2) * 100))
+
+    side = 'LONG' if score >= 3 else ('SHORT' if score <= -3 else 'NEUTRAL')
+    return {
+        'layer': '量价', 'side': side, 'score': score,
+        'volRatio': round(vr, 2), 'pxChg6': round(px_chg, 2),
+        'notes': notes,
+        'confidence': min(100, abs(score) * 16 + (10 if abs(vr - 1) > 0.25 else 0)),
+    }
+
+
+# ============================================================
+#  第五层：庄家（资金面 / 操盘意图）
+# ============================================================
+def layer_dealer(stat_rows, funding=None):
+    """庄家操盘层：持仓结构 + 大户散户对立 + 资金费率 + 增减仓 + 爆仓分布
+
+    stat_rows: Gate contract_stats 原始 list（时间升序）
+    funding:   当前资金费率（小数，负数=空头付钱给多头）
+    """
+    if not stat_rows or len(stat_rows) < 12:
+        return None
+
+    def _f(x):
+        try:
+            return float(x)
+        except Exception:
+            return None
+
+    tops = [x for x in (_f(r.get('top_lsr_size')) for r in stat_rows) if x is not None]
+    accs = [x for x in (_f(r.get('lsr_account')) for r in stat_rows) if x is not None]
+    takers = [x for x in (_f(r.get('lsr_taker')) for r in stat_rows) if x is not None]
+    ois = [x for x in (_f(r.get('open_interest')) for r in stat_rows) if x is not None]
+    mps = [x for x in (_f(r.get('mark_price')) for r in stat_rows) if x is not None]
+
+    if not tops:
+        return None
+
+    score = 0
+    notes = []
+    top_now, top_prev = tops[-1], tops[0]
+    top_chg = top_now - top_prev
+
+    if top_now >= 0.65:
+        score += 2
+        notes.append('大户多单占比 %.0f%%，重仓押多' % (top_now * 100))
+    elif top_now <= 0.40:
+        score -= 2
+        notes.append('大户多单占比 %.0f%%，重仓押空' % (top_now * 100))
+
+    if top_chg > 0.03:
+        score += 2
+        notes.append('大户近 12h 加多 %.1f 个点（%.1f%%→%.1f%%）'
+                     % (top_chg * 100, top_prev * 100, top_now * 100))
+    elif top_chg < -0.03:
+        score -= 2
+        notes.append('大户近 12h 减多 %.1f 个点（%.1f%%→%.1f%%）'
+                     % (abs(top_chg) * 100, top_prev * 100, top_now * 100))
+
+    if accs:
+        acc_now = accs[-1]
+        if top_now > 0.58 and acc_now < 1.0:
+            score += 2
+            notes.append('大户偏多(%.0f%%)但散户偏空(账户比 %.2f)，吸筹结构'
+                         % (top_now * 100, acc_now))
+        elif top_now < 0.45 and acc_now > 1.2:
+            score -= 2
+            notes.append('大户偏空(%.0f%%)但散户偏多(账户比 %.2f)，派发结构'
+                         % (top_now * 100, acc_now))
+
+    if len(ois) >= 2 and ois[0] and len(mps) >= 2 and mps[0]:
+        oi_chg = (ois[-1] - ois[0]) / ois[0] * 100
+        px_chg = (mps[-1] - mps[0]) / mps[0] * 100
+        if oi_chg > 2 and px_chg > 0:
+            score += 2
+            notes.append('持仓增 %.1f%% 且价格上涨，多头主动进场' % oi_chg)
+        elif oi_chg > 2 and px_chg < 0:
+            score -= 2
+            notes.append('持仓增 %.1f%% 但价格下跌，空头加仓压制' % oi_chg)
+        elif oi_chg < -2 and px_chg < 0:
+            score += 1
+            notes.append('持仓减 %.1f%% 且价格下跌，多头止损离场，下跌将尽' % abs(oi_chg))
+        elif oi_chg < -2 and px_chg > 0:
+            score -= 1
+            notes.append('持仓减 %.1f%% 但价格上涨，空头平仓推动，涨势虚' % abs(oi_chg))
+
+    if takers:
+        tk = sum(takers[-6:]) / min(6, len(takers))
+        if tk > 1.15:
+            score += 1
+            notes.append('主动买入占优（taker 比 %.2f）' % tk)
+        elif tk < 0.87:
+            score -= 1
+            notes.append('主动卖出占优（taker 比 %.2f）' % tk)
+
+    if funding is not None:
+        fr = funding * 100
+        if fr <= -0.03:
+            score += 2
+            notes.append('资金费率 %.4f%%，空头付钱给多头，空头拥挤易被挤' % fr)
+        elif fr >= 0.05:
+            score -= 2
+            notes.append('资金费率 %+.4f%%，多头付钱给空头，多头拥挤易被砸' % fr)
+        else:
+            notes.append('资金费率 %+.4f%%，多空成本均衡' % fr)
+
+    ll = sum(_f(r.get('long_liq_usd')) or 0 for r in stat_rows[-24:])
+    sl = sum(_f(r.get('short_liq_usd')) or 0 for r in stat_rows[-24:])
+    if ll + sl > 0:
+        if ll / (ll + sl) > 0.8:
+            score += 2
+            notes.append('24h 爆仓 %.0f%% 是多头被清洗，浮筹已清'
+                         % (ll / (ll + sl) * 100))
+        elif sl / (ll + sl) > 0.8:
+            score -= 2
+            notes.append('24h 爆仓 %.0f%% 是空头被清洗，空头已打爆'
+                         % (sl / (ll + sl) * 100))
+        else:
+            notes.append('24h 爆仓多空较均衡')
+
+    side = 'LONG' if score >= 3 else ('SHORT' if score <= -3 else 'NEUTRAL')
+    return {
+        'layer': '庄家', 'side': side, 'score': score,
+        'topLs': round(top_now, 3), 'topChg': round(top_chg, 4),
+        'funding': round(funding * 100, 4) if funding is not None else None,
+        'notes': notes,
+        'confidence': min(100, abs(score) * 14 + 15),
+    }
+
+
+# ============================================================
+#  汇总投票：右侧交易优先（权重与门槛全部由回测标定）
+# ============================================================
+# 权重来源：24 币 / 4h / 10 个月 / 489 个信号样本回测
+#   趋势(EMA+ADX)   右侧胜率 69.9%  249 样本  → 权重 3.0  【核心】
+#   结构(布林+摆动)  单层胜率 58.3%  669 样本  → 权重 3.0  【核心】
+#   庄家(资金面)     无历史可回测             → 权重 1.5  【情报，不独断】
+#   量价(缩量衰竭)   左侧胜率 35.6%           → 权重 0.8  【仅加分，不主导】
+#   动量(MACD+RSI)  左侧胜率 35.6%           → 权重 0.5  【仅微调】
+#
+# 【右侧交易原则】用户明确要求：
+#   默认只推右侧（趋势已确认、顺势入场、等回调）
+#   左侧（背离抄底摸顶）实测胜率仅 35.6%，做多抄底更只有 29.3% → 默认禁止
+#   只有量价出现"极其可靠"的衰竭+背离共振时，才允许左侧介入，并在推送中显式标注
+LAYER_WEIGHT = {
+    '趋势': 3.0,
+    '结构': 2.5,
+    '缠论': 2.5,     # 回测：缠论+趋势同向 73.4%（218 样本），是最强组合
+    '订单流': 1.5,   # 实时资金行为，无法回测但情报价值高
+    '庄家': 1.5,
+    '量价': 0.8,
+    '动量': 0.5,
+}
+
+# ---- 右侧交易门槛 ----
+RIGHT_MIN_ADX = 40        # 右侧要求趋势强度 ADX>=40（回测 69.9%，ADX>=55 时 71.0%）
+RIGHT_MIN_CONF = 62       # 右侧最终置信度门槛
+RIGHT_MIN_RATIO = 0.55    # 右侧加权净得分占比门槛
+
+# ---- 左侧特批条件（极苛刻，宁可不推）----
+LEFT_MIN_CONF = 80        # 左侧要求置信度 >=80
+LEFT_REQUIRE_ADX = 30     # 左侧也要求趋势不能完全死掉
+LEFT_REQUIRE_VP_SCORE = 5 # 量价层必须给满 5 分（缩量衰竭 + 背离共振）
+
+
+def vote(layers, smart=None):
+    """五层加权投票 + 右侧优先裁决
+
+    返回字段新增：
+      tradeType: '右侧' / '左侧'   —— 推送中必须显式标注
+      rightSide: True/False        —— 是否顺势
     """
     valid = [l for l in layers if l]
+
+    # 兼容旧调用：smart 传 dict 时转成庄家层
     if smart and smart.get('side'):
-        valid.append({'layer': '聪明钱', 'side': smart['side'],
-                      'score': smart.get('score', 3),
-                      'confidence': min(100, smart.get('score', 3) * 15),
-                      'notes': smart.get('reasons', [])})
+        valid.append({
+            'layer': '庄家',
+            'side': smart['side'],
+            'score': smart.get('score', 3),
+            'confidence': min(100, smart.get('score', 3) * 14 + 15),
+            'notes': smart.get('reasons', []),
+        })
 
     if not valid:
         return None
 
-    longs = [l for l in valid if l['side'] == 'LONG']
-    shorts = [l for l in valid if l['side'] == 'SHORT']
-    neutral = [l for l in valid if l['side'] == 'NEUTRAL']
+    trend = next((l for l in valid if l['layer'] == '趋势'), None)
+    volp = next((l for l in valid if l['layer'] == '量价'), None)
 
-    if len(longs) > len(shorts):
-        side, agree, oppose = 'LONG', longs, shorts
-    elif len(shorts) > len(longs):
-        side, agree, oppose = 'SHORT', shorts, longs
+    # ============ 第一关：右侧资格（默认路径）============
+    trend_ok = bool(trend and trend['side'] != 'NEUTRAL'
+                    and (trend.get('adx') or 0) >= RIGHT_MIN_ADX)
+    right_side = trend['side'] if trend_ok else None
+
+    # ============ 第二关：左侧特批（极苛刻）============
+    left_ok = False
+    left_side = None
+    if not right_side and trend and volp:
+        vp_score = abs(volp.get('score') or 0)
+        adx_v = trend.get('adx') or 0
+        # 量价必须满 5 分（缩量衰竭 3 + 背离 2），且趋势不能死透
+        if vp_score >= LEFT_REQUIRE_VP_SCORE and adx_v >= LEFT_REQUIRE_ADX:
+            left_ok = True
+            left_side = volp['side']
+            # 趋势方向与之相反，才算真正逆势抄底
+            if trend['side'] == left_side:
+                left_ok = False
+
+    if not right_side and not left_ok:
+        return None
+
+    target_side = right_side or left_side
+    trade_type = '右侧' if right_side else '左侧'
+
+    # ============ 加权计分 ============
+    total_w = 0.0
+    net = 0.0
+    win, lose, neutral = [], [], []
+
+    for l in valid:
+        w = LAYER_WEIGHT.get(l['layer'], 1.0)
+        # ADX 不足时趋势票打折
+        if l['layer'] == '趋势' and (l.get('adx') or 0) < RIGHT_MIN_ADX:
+            w *= 0.5
+        strength = 0.4 + min(1.0, (l.get('confidence', 50) / 100.0)) * 0.6
+
+        if l['side'] == 'LONG':
+            net += w * strength
+            total_w += w
+        elif l['side'] == 'SHORT':
+            net -= w * strength
+            total_w += w
+
+        if l['side'] == 'NEUTRAL':
+            neutral.append(l)
+        elif l['side'] == target_side:
+            win.append(l)
+        else:
+            lose.append(l)
+
+    if not win or total_w <= 0:
+        return None
+
+    # ⚠️ 分母只算「表态层」。中立层不表态就不该稀释一致性，
+    #    否则加层越多、分母越大，真信号被稀释到永远过不了门槛。
+    ratio = abs(net) / total_w
+
+    # 但只看表态层会让「仅两层一致」直接等于满分（ratio≈1.0），
+    # 而回测里趋势+结构的真实胜率只有 69.7% —— 必须用表态覆盖率回压。
+    # 覆盖率 = 表态层权重 / 全部层权重（含中立层）。7 层里只 2 层说话 ≈ 0.45。
+    w_all = 0.0
+    for l in valid:
+        w_all += LAYER_WEIGHT.get(l['layer'], 1.0)
+    cover = (total_w / w_all) if w_all > 0 else 0.0
+    # 覆盖率映射：1.0→1.0（全员表态），0.4→0.62，0.25→0.5
+    cover_f = 0.5 + 0.5 * min(1.0, cover / 1.0) ** 0.6
+
+    conf = round(ratio * 100 * cover_f)
+
+    # 顺势加成 / 逆势减分
+    if right_side:
+        if len(win) >= 3 and not lose:
+            conf = min(100, conf + 6)
+        adx_v = (trend.get('adx') or 0) if trend else 0
+        if adx_v >= 55:
+            conf = min(100, conf + 6)
+        elif adx_v >= 45:
+            conf = min(100, conf + 3)
+        # 缠论共振是回测最优组合（73.4%），额外加成
+        chan_ok = any(l['layer'] == '缠论' and l['side'] == target_side for l in win)
+        if chan_ok:
+            conf = min(100, conf + 5)
     else:
-        return None
+        conf = min(100, conf - 5)   # 左侧一律扣分
 
-    # 至少 2 票一致
-    if len(agree) < 2:
-        return None
-    # 反方不能多于正方
-    if len(oppose) > len(agree):
-        return None
+    # ============ 门槛裁决 ============
+    if right_side:
+        if ratio < RIGHT_MIN_RATIO:
+            return None
+        if len(win) < 2:            # 至少两层同向
+            return None
+        w_win = sum(LAYER_WEIGHT.get(l['layer'], 1) for l in win)
+        w_lose = sum(LAYER_WEIGHT.get(l['layer'], 1) for l in lose)
+        if w_lose > w_win * 0.8:    # 反方不能压过正方
+            return None
+        if conf < RIGHT_MIN_CONF:
+            return None
+    else:
+        # 左侧：必须有庄家层或结构层佐证，不能只靠量价一层
+        if len(win) < 2:
+            return None
+        if conf < LEFT_MIN_CONF:
+            return None
 
-    total = len(valid)
-    ratio = len(agree) / total
-    # 置信度：以同向层为主（中性层只表示"没表态"，轻微折扣，不做分母主体）
-    # 反方层才真正削弱结论
-    avg_conf = sum(l['confidence'] for l in agree) / len(agree)
-    penalty = len(oppose) * 15 + len(neutral) * 5
-    conf = round(avg_conf - penalty)
-    conf = max(0, min(100, conf))
-    # 三层全同向额外加成
-    if len(oppose) == 0 and len(neutral) == 0 and len(agree) >= 3:
-        conf = min(100, conf + 8)
+    # ============ 质量分级（回测标定，置信度分档对胜率几乎无影响，
+    #              真正拉开差距的是缠论共振）============
+    chan_agree = any(l['layer'] == '缠论' and l['side'] == target_side for l in win)
+    chan_against = any(l['layer'] == '缠论' and l['side'] != target_side for l in lose)
+    adx_now = (trend.get('adx') or 0) if trend else 0
 
-    # 硬确认标记（仅用于展示与「非全一致」时的兜底）
-    has_trend = any(l.get('valid') and l['layer'] == '趋势' for l in agree)
-    has_vol = any(l.get('volOk') and l['layer'] == '动量' for l in agree)
-    has_smart = any(l['layer'] == '聪明钱' for l in agree)
-
-    # 三层技术分析全部同向 = 最强确认，无需额外硬确认
-    # 只在「仅两层一致」时才要求至少一项硬确认，防止震荡市误报
-    unanimous = len(oppose) == 0 and len(neutral) == 0 and len(agree) >= 3
-
-    if conf < 45:
-        return None
-    if not unanimous and not (has_trend or has_vol or has_smart):
-        return None
+    if trade_type == '右侧':
+        if chan_agree and adx_now >= 45:
+            grade = 'A'      # 回测 76.5%（98 样本）
+        elif chan_agree:
+            grade = 'B'      # 回测 69.4%（49 样本）
+        elif chan_against:
+            grade = 'C'      # 缠论明确反对
+        else:
+            # 缠论不表态（震荡/无中枢）。注意：ADX>=50 但缠论无话可说时
+            # 回测只有 52.0%，比 C 还差 —— 强趋势 + 结构不明 = 陷阱
+            grade = 'C-'
+    else:
+        grade = 'L'          # 左侧特批，单列
 
     return {
-        'side': side,
+        'side': target_side,
         'confidence': conf,
-        'votes': '%d/%d' % (len(agree), total),
-        'agreeLayers': [l['layer'] for l in agree],
-        'opposeLayers': [l['layer'] for l in oppose],
+        'grade': grade,
+        'chanAgree': chan_agree,
+        'chanAgainst': chan_against,
+        'votes': '%d/%d' % (len(win), len(valid)),
+        'tradeType': trade_type,
+        'rightSide': bool(right_side),
+        'agreeLayers': [l['layer'] for l in win],
+        'opposeLayers': [l['layer'] for l in lose],
         'neutralLayers': [l['layer'] for l in neutral],
-        'confirm': {'trend': has_trend, 'volume': has_vol, 'smartMoney': has_smart},
-        'unanimous': unanimous,
+        'netRatio': round(ratio, 3),
+        'confirm': {
+            'trend': any(l['layer'] == '趋势' for l in win),
+            'volume': any(l['layer'] == '量价' for l in win),
+            'smartMoney': any(l['layer'] == '庄家' for l in win),
+        },
+        'unanimous': (not lose and not neutral and len(win) >= 3),
+    }
+
+
+# ============================================================
+#  第六层：订单流（Order Flow）
+# ============================================================
+def layer_orderflow(m1):
+    """订单流层：从 1m K 线构造主动买卖压力
+
+    原理：单根 K 线的收盘位置决定该根量能归属哪一方
+      收在最高附近 → 买方主动吃掉卖单（主动买）
+      收在最低附近 → 卖方主动砸（主动卖）
+    这是对逐笔成交的稳健近似（Gate /trades 只覆盖 1.4 分钟，不可用）
+    """
+    m = m1
+    if not m or len(m) < 200:
+        return None
+
+    rows = []
+    for x in m:
+        try:
+            o, h, l, c = float(x['o']), float(x['h']), float(x['l']), float(x['c'])
+            v = float(x.get('sum') or x.get('v') or 0)
+        except Exception:
+            continue
+        if v <= 0:
+            continue
+        rng = h - l
+        if rng <= 0:
+            pos = 0.5
+        else:
+            pos = (c - l) / rng        # 0=最低 1=最高
+        rows.append((pos, v, o, c))
+
+    if len(rows) < 200:
+        return None
+
+    def window(n):
+        seg = rows[-n:]
+        buy = sum(v * p for p, v, o, c in seg)
+        sell = sum(v * (1 - p) for p, v, o, c in seg)
+        tot = buy + sell
+        return (buy / tot) if tot > 0 else 0.5
+
+    r15 = window(15)
+    r60 = window(60)
+    r240 = window(240)
+
+    score = 0
+    notes = []
+    notes.append('主动买占比：15min %.0f%% / 1h %.0f%% / 4h %.0f%%'
+                 % (r15 * 100, r60 * 100, r240 * 100))
+
+    # 短周期主导方向
+    if r60 >= 0.58 and r15 >= 0.55:
+        score += 2
+        notes.append('短周期买盘持续占优（1h %.0f%%，15min %.0f%%）' % (r60 * 100, r15 * 100))
+    elif r60 <= 0.42 and r15 <= 0.45:
+        score -= 2
+        notes.append('短周期卖盘持续占优（1h %.0f%%，15min %.0f%%）' % (r60 * 100, r15 * 100))
+
+    # 大小周期背离：短周期转向但长周期未跟 → 趋势可能反转
+    if r240 >= 0.56 and r15 <= 0.44:
+        score -= 2
+        notes.append('订单流背离：4h 偏买(%.0f%%)但 15min 急转卖(%.0f%%)，短线抛压出现'
+                     % (r240 * 100, r15 * 100))
+    elif r240 <= 0.44 and r15 >= 0.56:
+        score += 2
+        notes.append('订单流背离：4h 偏卖(%.0f%%)但 15min 急转买(%.0f%%)，短线承接出现'
+                     % (r240 * 100, r15 * 100))
+
+    # 极端单边（>68% 或 <32%）是强信号
+    if r60 >= 0.68:
+        score += 1
+        notes.append('1h 主动买达 %.0f%%，单边扫货特征' % (r60 * 100))
+    elif r60 <= 0.32:
+        score -= 1
+        notes.append('1h 主动卖达 %.0f%%，单边砸盘特征' % (r60 * 100))
+
+    side = 'LONG' if score >= 2 else ('SHORT' if score <= -2 else 'NEUTRAL')
+    return {
+        'layer': '订单流', 'side': side, 'score': score,
+        'buy15': round(r15, 3), 'buy60': round(r60, 3), 'buy240': round(r240, 3),
+        'notes': notes,
+        'confidence': min(100, abs(score) * 16 + 12),
+    }
+
+
+# ============================================================
+#  第七层：缠论（分型 → 笔 → 线段 → 中枢）
+# ============================================================
+def _chan_fractals(cs, lb=1):
+    """识别顶分型/底分型：中间 K 线的高点(低点)高于(低于)两侧
+
+    返回 [{'idx':i,'type':'top'/'bottom','price':p,'high':h,'low':l}, ...]
+    """
+    out = []
+    n = len(cs)
+    for i in range(lb, n - lb):
+        h, l = cs[i]['h'], cs[i]['l']
+        is_top = all(h > cs[i-j]['h'] and h > cs[i+j]['h'] for j in range(1, lb+1))
+        is_bot = all(l < cs[i-j]['l'] and l < cs[i+j]['l'] for j in range(1, lb+1))
+        if is_top:
+            out.append({'idx': i, 'type': 'top', 'price': h})
+        elif is_bot:
+            out.append({'idx': i, 'type': 'bottom', 'price': l})
+    return out
+
+
+def _chan_bis(fxs, min_gap=3):
+    """分型连笔：顶底交替且间隔 >= min_gap，同类型取极值"""
+    if not fxs:
+        return []
+    bis = []
+    cur = fxs[0]
+    for f in fxs[1:]:
+        if f['type'] == cur['type']:
+            # 同类型，取更极端的
+            if (f['type'] == 'top' and f['price'] > cur['price']) or \
+               (f['type'] == 'bottom' and f['price'] < cur['price']):
+                cur = f
+        else:
+            if f['idx'] - cur['idx'] >= min_gap:
+                bis.append({'from': cur, 'to': f,
+                            'dir': 'up' if f['type'] == 'top' else 'down',
+                            'range': abs(f['price'] - cur['price']),
+                            'i1': cur['idx'], 'i2': f['idx']})
+                cur = f
+            else:
+                # 间隔太近，跳过（保留原向）
+                continue
+    return bis
+
+
+def _chan_zhongshu(bis, min_bis=3):
+    """中枢：连续三笔重叠区间
+
+    中枢 = [max(三笔最低点), min(三笔最高点)]，存在重叠即为有效中枢
+    """
+    if len(bis) < min_bis:
+        return None
+    for k in range(len(bis) - min_bis, -1, -1):
+        seg = bis[k:k+min_bis]
+        highs = [max(b['from']['price'], b['to']['price']) for b in seg]
+        lows = [min(b['from']['price'], b['to']['price']) for b in seg]
+        zg = min(highs)   # 中枢上沿
+        zd = max(lows)    # 中枢下沿
+        if zg > zd:
+            return {'zg': zg, 'zd': zd, 'i1': seg[0]['i1'], 'i2': seg[-1]['i2'],
+                    'mid': (zg + zd) / 2}
+    return None
+
+
+def layer_chan(cs):
+    """缠论层：走势结构 + 中枢位置 + 背驰
+
+    核心逻辑（缠中说禅）：
+      1. 当前笔方向（最后一个未完成笔）
+      2. 与中枢的关系：上破中枢=强势，下破=弱势，中枢内=震荡
+      3. 背驰：出中枢后一笔的力度（幅度/时长）弱于进中枢那一笔 → 反转信号
+    """
+    if len(cs) < 80:
+        return None
+
+    fxs = _chan_fractals(cs, lb=1)
+    if len(fxs) < 6:
+        return None
+    bis = _chan_bis(fxs, min_gap=2)
+    if len(bis) < 4:
+        return None
+
+    px = cs[-1]['c']
+    last = bis[-1]
+    score = 0
+    notes = []
+
+    # 1) 当前笔方向（最后一笔走向 + 价格相对其终点的位置）
+    notes.append('当前笔：%s（%.4g→%.4g）'
+                 % ('上行' if last['dir'] == 'up' else '下行',
+                    last['from']['price'], last['to']['price']))
+    if last['dir'] == 'up' and px >= last['to']['price'] * 0.995:
+        score += 2
+        notes.append('价格站在最后一笔上行高点附近，笔延续中')
+    elif last['dir'] == 'down' and px <= last['to']['price'] * 1.005:
+        score -= 2
+        notes.append('价格处于最后一笔下行低点附近，笔延续中')
+
+    # 2) 中枢关系
+    zs = _chan_zhongshu(bis, 3)
+    if zs:
+        notes.append('中枢区间 %.4g ~ %.4g' % (zs['zd'], zs['zg']))
+        if px > zs['zg']:
+            score += 2
+            notes.append('价格在中枢上方（第三类买点区），多头结构占优')
+        elif px < zs['zd']:
+            score -= 2
+            notes.append('价格在中枢下方（第三类卖点区），空头结构占优')
+        else:
+            notes.append('价格在中枢内部，方向未选择，震荡格局')
+            score *= 0.5
+    else:
+        notes.append('近期无有效中枢（单边趋势中）')
+
+    # 3) 背驰：比较最后两笔与更前一笔的力度
+    if len(bis) >= 5:
+        cur_bis = bis[-1]
+        prev_same = None
+        for b in reversed(bis[:-1]):
+            if b['dir'] == cur_bis['dir']:
+                prev_same = b
+                break
+        if prev_same and prev_same['range'] > 0:
+            ratio = cur_bis['range'] / prev_same['range']
+            if ratio < 0.65:
+                if cur_bis['dir'] == 'up':
+                    score -= 2
+                    notes.append('顶背驰：本段上行力度仅为前段的 %.0f%%，上涨动能衰减'
+                                 % (ratio * 100))
+                else:
+                    score += 2
+                    notes.append('底背驰：本段下行力度仅为前段的 %.0f%%，下跌动能衰减'
+                                 % (ratio * 100))
+            elif ratio > 1.4:
+                if cur_bis['dir'] == 'up':
+                    score += 1
+                    notes.append('上行力度放大至前段 %.0f%%，趋势加速' % (ratio * 100))
+                else:
+                    score -= 1
+                    notes.append('下行力度放大至前段 %.0f%%，趋势加速' % (ratio * 100))
+
+    side = 'LONG' if score >= 2 else ('SHORT' if score <= -2 else 'NEUTRAL')
+    return {
+        'layer': '缠论', 'side': side, 'score': score,
+        'bisCount': len(bis),
+        'zhongshu': [round(zs['zd'], 4), round(zs['zg'], 4)] if zs else None,
+        'notes': notes,
+        'confidence': min(100, abs(score) * 15 + 15),
     }
