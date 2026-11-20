@@ -687,6 +687,7 @@ LAYER_WEIGHT = {
 RIGHT_MIN_ADX = 40        # 右侧要求趋势强度 ADX>=40（回测 69.9%，ADX>=55 时 71.0%）
 RIGHT_MIN_CONF = 62       # 右侧最终置信度门槛
 RIGHT_MIN_RATIO = 0.55    # 右侧加权净得分占比门槛
+VOTE_MIN_SHARE = 2 / 3    # 表态层中同向占比须达 2/3（三分之二多数）
 
 # ---- 左侧特批条件（极苛刻，宁可不推）----
 LEFT_MIN_CONF = 80        # 左侧要求置信度 >=80
@@ -806,10 +807,17 @@ def vote(layers, smart=None):
         conf = min(100, conf - 5)   # 左侧一律扣分
 
     # ============ 门槛裁决 ============
+    # 三分之二多数：按「表态层」计票（中立层不投票，不该占分母）
+    #   表态层 = win + lose；win 必须 >= 表态层的 2/3
+    n_voted = len(win) + len(lose)
+    vote_share = (len(win) / n_voted) if n_voted else 0.0
+
     if right_side:
         if ratio < RIGHT_MIN_RATIO:
             return None
         if len(win) < 2:            # 至少两层同向
+            return None
+        if vote_share < VOTE_MIN_SHARE:
             return None
         w_win = sum(LAYER_WEIGHT.get(l['layer'], 1) for l in win)
         w_lose = sum(LAYER_WEIGHT.get(l['layer'], 1) for l in lose)
@@ -820,6 +828,8 @@ def vote(layers, smart=None):
     else:
         # 左侧：必须有庄家层或结构层佐证，不能只靠量价一层
         if len(win) < 2:
+            return None
+        if vote_share < VOTE_MIN_SHARE:
             return None
         if conf < LEFT_MIN_CONF:
             return None
@@ -851,6 +861,8 @@ def vote(layers, smart=None):
         'chanAgree': chan_agree,
         'chanAgainst': chan_against,
         'votes': '%d/%d' % (len(win), len(valid)),
+        'voteShare': round(vote_share, 3),
+        'nVoted': n_voted,
         'tradeType': trade_type,
         'rightSide': bool(right_side),
         'agreeLayers': [l['layer'] for l in win],
@@ -1036,7 +1048,11 @@ def layer_chan(cs):
 
     px = cs[-1]['c']
     last = bis[-1]
-    score = 0
+
+    # 三类信号分开记分，避免正负相互抵消（曾出现中枢判空却被一笔加速拉回中性）
+    s_bi = 0        # 当前笔延续
+    s_zs = 0        # 中枢位置（主结构方向）
+    s_bc = 0        # 背驰/加速（力度对比）
     notes = []
 
     # 1) 当前笔方向（最后一笔走向 + 价格相对其终点的位置）
@@ -1044,29 +1060,29 @@ def layer_chan(cs):
                  % ('上行' if last['dir'] == 'up' else '下行',
                     last['from']['price'], last['to']['price']))
     if last['dir'] == 'up' and px >= last['to']['price'] * 0.995:
-        score += 2
+        s_bi = 2
         notes.append('价格站在最后一笔上行高点附近，笔延续中')
     elif last['dir'] == 'down' and px <= last['to']['price'] * 1.005:
-        score -= 2
+        s_bi = -2
         notes.append('价格处于最后一笔下行低点附近，笔延续中')
 
-    # 2) 中枢关系
+    # 2) 中枢关系（结构背景分）
     zs = _chan_zhongshu(bis, 3)
     if zs:
         notes.append('中枢区间 %.4g ~ %.4g' % (zs['zd'], zs['zg']))
         if px > zs['zg']:
-            score += 2
-            notes.append('价格在中枢上方（第三类买点区），多头结构占优')
+            s_zs = 2
+            notes.append('价格站上中枢上沿（第三类买点区）')
         elif px < zs['zd']:
-            score -= 2
-            notes.append('价格在中枢下方（第三类卖点区），空头结构占优')
+            s_zs = -2
+            notes.append('价格跌破中枢下沿（第三类卖点区）')
         else:
             notes.append('价格在中枢内部，方向未选择，震荡格局')
-            score *= 0.5
     else:
         notes.append('近期无有效中枢（单边趋势中）')
 
-    # 3) 背驰：比较最后两笔与更前一笔的力度
+    # 3) 背驰 / 加速：力度对比。这才是缠论真正的价值所在——
+    #    中枢位置告诉你「在哪」，背驰告诉你「还有没有劲」。给最高权重。
     if len(bis) >= 5:
         cur_bis = bis[-1]
         prev_same = None
@@ -1077,25 +1093,45 @@ def layer_chan(cs):
         if prev_same and prev_same['range'] > 0:
             ratio = cur_bis['range'] / prev_same['range']
             if ratio < 0.65:
-                if cur_bis['dir'] == 'up':
-                    score -= 2
-                    notes.append('顶背驰：本段上行力度仅为前段的 %.0f%%，上涨动能衰减'
-                                 % (ratio * 100))
-                else:
-                    score += 2
-                    notes.append('底背驰：本段下行力度仅为前段的 %.0f%%，下跌动能衰减'
-                                 % (ratio * 100))
+                # 背驰 = 动能衰减，方向与前一笔相反
+                s_bc = -3 if cur_bis['dir'] == 'up' else 3
+                notes.append('%s背驰：本段%s力度仅为前段的 %.0f%%，动能衰竭'
+                             % ('顶' if cur_bis['dir'] == 'up' else '底',
+                                '上行' if cur_bis['dir'] == 'up' else '下行',
+                                ratio * 100))
             elif ratio > 1.4:
-                if cur_bis['dir'] == 'up':
-                    score += 1
-                    notes.append('上行力度放大至前段 %.0f%%，趋势加速' % (ratio * 100))
+                # 加速 = 顺势强化，只在顺中枢方向时才算强化
+                accel = 2 if cur_bis['dir'] == 'up' else -2
+                if s_zs == 0 or (accel > 0) == (s_zs > 0):
+                    s_bc = accel
+                    notes.append('%s力度放大至前段 %.0f%%，趋势加速'
+                                 % ('上行' if cur_bis['dir'] == 'up' else '下行',
+                                    ratio * 100))
                 else:
-                    score -= 1
-                    notes.append('下行力度放大至前段 %.0f%%，趋势加速' % (ratio * 100))
+                    notes.append('%s反抽力度放大至前段 %.0f%%，但仍在中枢逆向段内，不计方向'
+                                 % ('上行' if cur_bis['dir'] == 'up' else '下行',
+                                    ratio * 100))
 
-    side = 'LONG' if score >= 2 else ('SHORT' if score <= -2 else 'NEUTRAL')
+    score = s_bi + s_zs + s_bc
+    # 总分范围 -7~+7，门槛 ±3 要求「中枢 + 至少一个力度信号」同向才表态
+    side = 'LONG' if score >= 3 else ('SHORT' if score <= -3 else 'NEUTRAL')
+
+    # 结论要自洽：中性时必须说明是「哪两股力量抵消」，不能留局部措辞误导
+    if side == 'NEUTRAL':
+        if s_zs and s_bc and (s_zs > 0) != (s_bc > 0):
+            notes.append('缠论结论中性：结构位置与力度信号相互抵消（%+d vs %+d）'
+                         % (s_zs, s_bc))
+        elif score == 0:
+            notes.append('缠论结论中性：笔/中枢/背驰三项互不确认')
+        else:
+            notes.append('缠论结论中性：力度不足以确认方向（合计 %+d，需 ≥3）' % score)
+    elif side == 'LONG':
+        notes.append('缠论结论看多（合计 +%d/%d）' % (score, 7))
+    else:
+        notes.append('缠论结论看空（合计 %d/%d）' % (score, -7))
     return {
         'layer': '缠论', 'side': side, 'score': score,
+        'scoreParts': {'笔': s_bi, '中枢': s_zs, '背驰': s_bc},
         'bisCount': len(bis),
         'zhongshu': [round(zs['zd'], 4), round(zs['zg'], 4)] if zs else None,
         'notes': notes,
