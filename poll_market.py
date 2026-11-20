@@ -281,10 +281,25 @@ def fmt_signal(s):
         h.append('<span style="color:%s"><b>%s %s层</b></span>：' % (col, tag, L['layer']))
         h.append('；'.join(esc(n) for n in L['notes']) + '<br>')
     if s.get('smart'):
-        h.append('<span style="color:#16a34a"><b>✓ 聪明钱</b></span>：%s<br>'
-                 % esc('；'.join(s['smart']['reasons'])))
+        # 聪明钱按实际归属阵营着色：同向 ✓绿 / 反方 ✗红 / 缺席不标
+        if '聪明钱' in s['agreeLayers']:
+            s_tag, s_col = '✓', '#16a34a'
+        elif '聪明钱' in s['opposeLayers']:
+            s_tag, s_col = '✗', '#dc2626'
+        else:
+            s_tag, s_col = '—', '#9ca3af'
+        sm = s['smart']
+        s_side = '做多' if sm.get('side') == 'LONG' else ('做空' if sm.get('side') == 'SHORT' else '中性')
+        h.append('<span style="color:%s"><b>%s 聪明钱（%s）</b></span>：%s<br>'
+                 % (s_col, s_tag, s_side, esc('；'.join(sm['reasons']))))
     if s['opposeLayers']:
-        h.append('分歧层：%s<br>' % '、'.join(s['opposeLayers']))
+        opp = []
+        for L in s['layers']:
+            if L['layer'] in s['opposeLayers']:
+                opp.append('%s层（%s）' % (L['layer'], '看多' if L['side'] == 'LONG' else '看空'))
+        if '聪明钱' in s['opposeLayers'] and s.get('smart'):
+            opp.append('聪明钱（%s）' % ('看多' if s['smart'].get('side') == 'LONG' else '看空'))
+        h.append('对立面：%s<br>' % '、'.join(opp))
     if s['neutralLayers']:
         h.append('未表态：%s<br>' % '、'.join(s['neutralLayers']))
     h.append('日线大周期方向：%s' % (s.get('trend1d') or '—'))
