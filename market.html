@@ -78,6 +78,8 @@ a{color:inherit;text-decoration:none;}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;line-height:1.5;}
 .t-hot{background:rgba(246,70,93,.18);color:#FF7A8A;}
 .t-cool{background:rgba(14,203,129,.18);color:#3DDC97;}
+.coreb{display:inline-block;font-size:9px;padding:0 4px;margin-left:5px;border-radius:3px;
+  background:rgba(255,196,0,.16);color:#E8B33A;font-weight:600;vertical-align:middle;line-height:1.6;}
 .t-warn{background:rgba(240,185,11,.18);color:var(--warn);}
 .t-info{background:rgba(59,130,246,.18);color:#6BA6FF;}
 .t-pur{background:rgba(168,85,247,.18);color:#C084FC;}
@@ -176,10 +178,9 @@ a{color:inherit;text-decoration:none;}
 
 <div class="wrap">
   <div class="mkt" id="mkt">
-    <div class="c"><div class="k">合约总数</div><div class="v" id="m-count">—</div></div>
+    <div class="c"><div class="k">主流币数量</div><div class="v" id="m-count">—</div></div>
     <div class="c"><div class="k">上涨 / 下跌</div><div class="v" id="m-ud">—</div></div>
-    <div class="c"><div class="k">24h 总成交额</div><div class="v" id="m-vol">—</div></div>
-    <div class="c"><div class="k">实时状态</div><div class="v" id="m-time" style="font-size:13px;">连接中…</div></div>
+    <div class="c"><div class="k">24h 总成交额</div><div class="v" id="m-vol">—</div></div>    <div class="c"><div class="k">实时状态</div><div class="v" id="m-time" style="font-size:13px;">连接中…</div></div>
   </div>
 
   <div class="tools">
@@ -201,7 +202,7 @@ a{color:inherit;text-decoration:none;}
   </div>
 
   <div class="notice">
-    <b>数据说明</b>：行情与持仓数据来自 Gate.io USDT 永续合约公共接口（CORS 开放，手机直连）。全市场 <span id="n-ct">1000+</span> 个合约实时同步；
+    <b>数据说明</b>：行情与持仓数据来自 Gate.io USDT 永续合约公共接口（CORS 开放，手机直连）。当前<b>只监控主流币</b>（<span id="n-ct">—</span> 个，按成交额与流动性白名单筛选，已剔除空气币与新上小币）；
     点击任一币种可查看 K 线、多空点位、庄家行为识别与量化分析报告。
   </div>
 
@@ -338,12 +339,38 @@ function cluster(levels, tol=0.008){
 /* ================= 全市场列表 ================= */
 let ALL=[], BYC={}, FILTER='vol', SCAN=null, SCANMAP={};
 
+/* ===== 主流币白名单 =====
+   只监控流动性足够、有真实基本面的币。空气币 / 新上线 / 蹭热点的一律不看。
+   分两档：CORE = 核心权重（必看）；MAJOR = 主流（可看）。
+   白名单外的合约即使成交额很高也不进入列表（除非搜索时手动输入）。 */
+const CORE = ['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','TRX','LINK','AVAX','LTC','BCH','DOT','UNI','ZEC'];
+const MAJOR = ['SUI','APT','NEAR','ARB','OP','ATOM','FIL','ETC','INJ','SEI','TIA','PEPE','SHIB','AAVE',
+               'RENDER','FET','STX','IMX','GRT','ALGO','VET','HBAR','ICP','XLM','POL','WLD','JUP',
+               'LDO','ENA','ONDO','TAO','KAS','ORDI','BONK','FLOKI','WIF','CRV','SNX','COMP',
+               'DYDX','GMX','SUSHI','1INCH','ZECX','DASH','XMR','A','IOTA','THETA','EGLD','FLOW',
+               'SAND','MANA','AXS','GALA','CHZ','ENS','LPT','MASK','PEOPLE','AR','WOO','CAKE','KAVA',
+               'RUNE','PYTH','JTO','STRK','BLUR','W','ZK','TNSR','SAGA','PENDLE','ETHFI',
+               'AEVO','BOME','POPCAT','DOGS','NOT','HMSTR','CATI','TURBO','GOAT','MOODENG'];
+const MAINSET = new Set(CORE.concat(MAJOR));
+function isMain(sym){
+  const s = String(sym||'').toUpperCase();
+  return MAINSET.has(s);
+}
+function isCore(sym){ return CORE.indexOf(String(sym||'').toUpperCase()) >= 0; }
+/* 展示用排序权重：核心币永远排前面 */
+function mainRank(sym){
+  const s = String(sym||'').toUpperCase();
+  const i = CORE.indexOf(s); if(i>=0) return i;
+  const j = MAJOR.indexOf(s); if(j>=0) return 100+j;
+  return 9999;
+}
+
 function chgCls(v){ return v>0?'up':(v<0?'down':'flat'); }
 
 async function loadMarket(force){
   let t = force ? null : store.get('gtk', 30000);
   if(!t){ t = await J(API+'/tickers', 20000); store.set('gtk', t); }
-  ALL = t.map(x=>{
+  const raw = t.map(x=>{
     const last=+x.last||+x.mark_price||0;
     return {
       c:x.contract, sym:x.contract.replace('_USDT',''),
@@ -354,8 +381,13 @@ async function loadMarket(force){
       oi:+x.total_size||0
     };
   }).filter(x=>x.last>0);
+
+  /* 只保留主流币 */
+  ALL = raw.filter(x=>isMain(x.sym));
+
   BYC = {};
   ALL.forEach(x=>BYC[x.c]=x);
+  window.__ALLRAW = raw;   // 搜索时可以回退查全量
 
   updateMktBar();
   render();
@@ -380,7 +412,14 @@ function render(){
   const q = ($('q').value||'').trim().toUpperCase();
   let arr = ALL.slice();
 
-  if(q) arr = arr.filter(x=>x.sym.includes(q));
+  /* 有关键词时：允许从全量里捞（防止搜不到已下架/非白名单币），但仍标注非主流 */
+  if(q){
+    arr = ALL.filter(x=>x.sym.includes(q));
+    if(!arr.length && window.__ALLRAW){
+      arr = window.__ALLRAW.filter(x=>x.sym.includes(q));
+    }
+    arr = arr.slice(0, 60);
+  }
 
   if(FILTER==='vol') arr.sort((a,b)=>b.vol-a.vol);
   else if(FILTER==='gain') arr.sort((a,b)=>b.chg-a.chg);
@@ -408,8 +447,9 @@ function render(){
     const s = SCANMAP[x.c];
     let tagHtml = '';
     if(s) tagHtml = '<span class="tag '+(s.score>0?'t-hot':'t-cool')+'">'+(s.score>0?'多':'空')+Math.abs(s.score)+'</span>';
+    const coreBadge = isCore(x.sym) ? '<span class="coreb">核心</span>' : '';
     return '<div class="row" data-c="'+x.c+'" onclick="openCoin(\''+x.c+'\')">'+
-      '<div class="sym">'+x.sym+'<i>'+x.c+'</i></div>'+
+      '<div class="sym">'+x.sym+coreBadge+'<i>'+x.c+'</i></div>'+
       '<div class="num">'+pxFmt(x.last)+'</div>'+
       '<div class="num '+chgCls(x.chg)+'">'+sgn(x.chg)+'%</div>'+
       '<div class="num h3">$'+bigNum(x.vol)+'</div>'+
@@ -552,7 +592,10 @@ function schedulePaint(){
 async function scanSignals(){
   const btn=$('scan');
   btn.disabled=true; btn.textContent='扫描中…';
-  const pool = ALL.slice().sort((a,b)=>b.vol-a.vol).slice(0,45);
+  /* 只在主流币里扫；核心币优先，其余按成交额 */
+  const pool = ALL.slice()
+    .sort((a,b)=> (mainRank(a.sym)-mainRank(b.sym)) || (b.vol-a.vol))
+    .slice(0,45);
   const out=[]; SCANMAP={};
   const CONC=4;
   for(let i=0;i<pool.length;i+=CONC){
