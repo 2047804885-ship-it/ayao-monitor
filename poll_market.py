@@ -234,6 +234,8 @@ def analyze_coin(sym, smart, dealer_raw=None, funding=None):
         'grade': v.get('grade', 'C'),
         'chanAgree': v.get('chanAgree', False),
         'chanAgainst': v.get('chanAgainst', False),
+        'voteShare': v.get('voteShare', 0),
+        'nVoted': v.get('nVoted', 0),
         'agreeLayers': v['agreeLayers'],
         'opposeLayers': v['opposeLayers'],
         'neutralLayers': v.get('neutralLayers', []),
@@ -320,9 +322,16 @@ def fmt_signal(s):
              % (color, arrow, star, cn(s['coin']), side_cn, ttag, gtag))
 
     px_txt = ('%.6g' % s['price']) if s['price'] else '—'
+    nv = s.get('nVoted') or 0
+    vs = s.get('voteShare') or 0
+    if nv:
+        vshare_txt = (' · 表态 %d 层同向 <b>%.0f%%</b>（≥66.7%% 达标）'
+                      % (nv, vs * 100))
+    else:
+        vshare_txt = ''
     h.append('<div style="font-size:13px;color:#333;margin-bottom:6px">'
-             '现价 %s · 置信度 <b>%d</b> · %d 层投票 <b>%s</b> 一致'
-             % (px_txt, s['confidence'], len(s['layers']), s['votes']))
+             '现价 %s · 置信度 <b>%d</b> · %d 层投票 <b>%s</b> 一致%s'
+             % (px_txt, s['confidence'], len(s['layers']), s['votes'], vshare_txt))
     if s.get('counterTrend'):
         h.append(' · <span style="color:#f59e0b">逆日线</span>')
     h.append('</div>')
