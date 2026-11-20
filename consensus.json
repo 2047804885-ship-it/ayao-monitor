@@ -1,106 +1,12 @@
 {
- "time": "2026-11-20 16:31:40 北京时间",
- "ts": 1795163500,
+ "time": "2026-11-20 16:37:16 北京时间",
+ "ts": 1795163836,
  "scanned": 22,
  "ok": 22,
  "hitCount": 4,
  "source": "gateio",
  "engine": "TA-3layer-vote",
  "signals": [
-  {
-   "coin": "SOL_USDT",
-   "side": "SHORT",
-   "confidence": 75,
-   "votes": "3/4",
-   "agreeLayers": [
-    "趋势",
-    "结构",
-    "聪明钱"
-   ],
-   "opposeLayers": [],
-   "neutralLayers": [
-    "动量"
-   ],
-   "confirm": {
-    "trend": false,
-    "volume": false,
-    "smartMoney": true
-   },
-   "counterTrend": false,
-   "trend1d": "SHORT",
-   "price": 72.77,
-   "atrPct": 1.96,
-   "layers": [
-    {
-     "layer": "趋势",
-     "side": "SHORT",
-     "score": -3,
-     "valid": false,
-     "adx": 23.1,
-     "adxBand": "趋势偏弱",
-     "ema20": 73.509983,
-     "ema50": 75.748082,
-     "ema200": 88.53479,
-     "px": 72.77,
-     "notes": [
-      "均线空头排列 EMA20<EMA50<EMA200",
-      "价格失守 EMA20",
-      "ADX 23.1（趋势偏弱），方向未获动量确认"
-     ],
-     "confidence": 64
-    },
-    {
-     "layer": "动量",
-     "side": "NEUTRAL",
-     "score": 2,
-     "rsi": 43.3,
-     "macdHist": 0.01619,
-     "volRatio": 0.84,
-     "volOk": false,
-     "divergence": null,
-     "notes": [
-      "MACD 柱为正（0.0162），多头动能维持",
-      "DIF 在 DEA 之上",
-      "量能仅 0.84 倍均量，动能不足"
-     ],
-     "confidence": 36
-    },
-    {
-     "layer": "结构",
-     "side": "SHORT",
-     "score": -4,
-     "pctB": 0.243,
-     "res": 73.055,
-     "sup": 72.18,
-     "atrPct": 1.96,
-     "notes": [
-      "价格位于布林带下半区（%B=0.24）",
-      "上方阻力 73.055（距 0.39%，触碰 2 次）",
-      "下方支撑 72.18（距 0.81%，触碰 1 次）",
-      "距离阻力近、支撑远，盈亏比偏空",
-      "结构下移：更低高点 + 更低低点（LH/LL）",
-      "ATR(14) 波动 1.96% / 根，止损参考 2.94%"
-     ],
-     "confidence": 100
-    }
-   ],
-   "smart": {
-    "coin": "SOL_USDT",
-    "now": 0.7169775086986075,
-    "chg": -0.03749865654925211,
-    "strength": 0.486,
-    "glob": 2.3416445623342175,
-    "taker": 0.97,
-    "liqBias": -0.2,
-    "side": "SHORT",
-    "score": 5,
-    "reasons": [
-     "12h 大户持仓变动 -0.037，在 22 个主流币里排前 3（0.49 倍常态波动）",
-     "大户多单占比 71.7%，本身已偏空且还在减多",
-     "散户多空比 2.34（重仓看多），大户却在撤退——典型派发"
-    ]
-   }
-  },
   {
    "coin": "BTC_USDT",
    "side": "SHORT",
@@ -121,8 +27,8 @@
    },
    "counterTrend": false,
    "trend1d": "SHORT",
-   "price": 61980.0,
-   "atrPct": 1.55,
+   "price": 61979.7,
+   "atrPct": 1.56,
    "layers": [
     {
      "layer": "趋势",
@@ -131,10 +37,10 @@
      "valid": true,
      "adx": 49.2,
      "adxBand": "极强趋势",
-     "ema20": 63350.322082,
-     "ema50": 65874.552203,
-     "ema200": 73486.504636,
-     "px": 61980.0,
+     "ema20": 63350.293511,
+     "ema50": 65874.540438,
+     "ema200": 73486.501651,
+     "px": 61979.7,
      "notes": [
       "均线空头排列 EMA20<EMA50<EMA200",
       "价格失守 EMA20",
@@ -147,14 +53,14 @@
      "side": "NEUTRAL",
      "score": -2,
      "rsi": 33.9,
-     "macdHist": -21.888667,
-     "volRatio": 1.27,
+     "macdHist": -21.926958,
+     "volRatio": 1.28,
      "volOk": true,
      "divergence": null,
      "notes": [
-      "MACD 柱为负（-21.8887），空头动能维持",
+      "MACD 柱为负（-21.9270），空头动能维持",
       "DIF 在 DEA 之下",
-      "近 6 根量能为 30 根均量的 1.27 倍，放量确认"
+      "近 6 根量能为 30 根均量的 1.28 倍，放量确认"
      ],
      "confidence": 51
     },
@@ -165,14 +71,14 @@
      "pctB": 0.146,
      "res": 64055.0,
      "sup": 61913.7,
-     "atrPct": 1.55,
+     "atrPct": 1.56,
      "notes": [
       "价格位于布林带下半区（%B=0.15）",
       "上方阻力 64055（距 3.35%，触碰 1 次）",
       "下方支撑 61913.7（距 0.11%，触碰 1 次）",
       "距离支撑近、阻力远，盈亏比偏多",
       "结构下移：更低高点 + 更低低点（LH/LL）",
-      "ATR(14) 波动 1.55% / 根，止损参考 2.32%"
+      "ATR(14) 波动 1.56% / 根，止损参考 2.33%"
      ],
      "confidence": 64
     }
@@ -199,7 +105,7 @@
    },
    "counterTrend": false,
    "trend1d": "SHORT",
-   "price": 1755.77,
+   "price": 1755.15,
    "atrPct": 1.97,
    "layers": [
     {
@@ -209,10 +115,10 @@
      "valid": true,
      "adx": 43.5,
      "adxBand": "极强趋势",
-     "ema20": 1786.400421,
-     "ema50": 1859.632777,
-     "ema200": 2127.270995,
-     "px": 1755.77,
+     "ema20": 1786.341374,
+     "ema50": 1859.608463,
+     "ema200": 2127.264826,
+     "px": 1755.15,
      "notes": [
       "均线空头排列 EMA20<EMA50<EMA200",
       "价格失守 EMA20",
@@ -224,15 +130,15 @@
      "layer": "动量",
      "side": "NEUTRAL",
      "score": 2,
-     "rsi": 38.3,
-     "macdHist": 1.639786,
-     "volRatio": 1.15,
+     "rsi": 38.1,
+     "macdHist": 1.560652,
+     "volRatio": 1.16,
      "volOk": true,
      "divergence": null,
      "notes": [
-      "MACD 柱为正（1.6398），多头动能维持",
+      "MACD 柱为正（1.5607），多头动能维持",
       "DIF 在 DEA 之上",
-      "近 6 根量能为 30 根均量的 1.15 倍，放量确认"
+      "近 6 根量能为 30 根均量的 1.16 倍，放量确认"
      ],
      "confidence": 51
     },
@@ -240,14 +146,14 @@
      "layer": "结构",
      "side": "SHORT",
      "score": -2,
-     "pctB": 0.198,
+     "pctB": 0.193,
      "res": 1817.06,
      "sup": 1750.42,
      "atrPct": 1.97,
      "notes": [
-      "价格位于布林带下半区（%B=0.20）",
-      "上方阻力 1817.06（距 3.49%，触碰 1 次）",
-      "下方支撑 1750.42（距 0.30%，触碰 1 次）",
+      "价格位于布林带下半区（%B=0.19）",
+      "上方阻力 1817.06（距 3.53%，触碰 1 次）",
+      "下方支撑 1750.42（距 0.27%，触碰 1 次）",
       "距离支撑近、阻力远，盈亏比偏多",
       "结构下移：更低高点 + 更低低点（LH/LL）",
       "ATR(14) 波动 1.97% / 根，止损参考 2.95%"
@@ -256,6 +162,99 @@
     }
    ],
    "smart": null
+  },
+  {
+   "coin": "SOL_USDT",
+   "side": "SHORT",
+   "confidence": 69,
+   "votes": "3/4",
+   "agreeLayers": [
+    "趋势",
+    "结构",
+    "聪明钱"
+   ],
+   "opposeLayers": [],
+   "neutralLayers": [
+    "动量"
+   ],
+   "confirm": {
+    "trend": false,
+    "volume": false,
+    "smartMoney": true
+   },
+   "counterTrend": false,
+   "trend1d": "SHORT",
+   "price": 72.72,
+   "atrPct": 1.97,
+   "layers": [
+    {
+     "layer": "趋势",
+     "side": "SHORT",
+     "score": -3,
+     "valid": false,
+     "adx": 23.1,
+     "adxBand": "趋势偏弱",
+     "ema20": 73.505221,
+     "ema50": 75.746121,
+     "ema200": 88.534292,
+     "px": 72.72,
+     "notes": [
+      "均线空头排列 EMA20<EMA50<EMA200",
+      "价格失守 EMA20",
+      "ADX 23.1（趋势偏弱），方向未获动量确认"
+     ],
+     "confidence": 64
+    },
+    {
+     "layer": "动量",
+     "side": "NEUTRAL",
+     "score": 2,
+     "rsi": 43.0,
+     "macdHist": 0.009808,
+     "volRatio": 0.84,
+     "volOk": false,
+     "divergence": null,
+     "notes": [
+      "MACD 柱为正（0.0098），多头动能维持",
+      "DIF 在 DEA 之上",
+      "量能仅 0.84 倍均量，动能不足"
+     ],
+     "confidence": 36
+    },
+    {
+     "layer": "结构",
+     "side": "SHORT",
+     "score": -3,
+     "pctB": 0.23,
+     "res": 73.055,
+     "sup": 72.18,
+     "atrPct": 1.97,
+     "notes": [
+      "价格位于布林带下半区（%B=0.23）",
+      "上方阻力 73.055（距 0.46%，触碰 2 次）",
+      "下方支撑 72.18（距 0.74%，触碰 1 次）",
+      "结构下移：更低高点 + 更低低点（LH/LL）",
+      "ATR(14) 波动 1.97% / 根，止损参考 2.96%"
+     ],
+     "confidence": 82
+    }
+   ],
+   "smart": {
+    "coin": "SOL_USDT",
+    "now": 0.7169775086986075,
+    "chg": -0.03749865654925211,
+    "strength": 0.486,
+    "glob": 2.3416445623342175,
+    "taker": 0.97,
+    "liqBias": -0.2,
+    "side": "SHORT",
+    "score": 5,
+    "reasons": [
+     "12h 大户持仓变动 -0.037，在 22 个主流币里排前 3（0.49 倍常态波动）",
+     "大户多单占比 71.7%，本身已偏空且还在减多",
+     "散户多空比 2.34（重仓看多），大户却在撤退——典型派发"
+    ]
+   }
   },
   {
    "coin": "LTC_USDT",
@@ -277,7 +276,7 @@
    },
    "counterTrend": false,
    "trend1d": "SHORT",
-   "price": 42.03,
+   "price": 41.99,
    "atrPct": 1.98,
    "layers": [
     {
@@ -287,10 +286,10 @@
      "valid": true,
      "adx": 46.7,
      "adxBand": "极强趋势",
-     "ema20": 43.643592,
-     "ema50": 45.615198,
-     "ema200": 52.066821,
-     "px": 42.03,
+     "ema20": 43.639782,
+     "ema50": 45.613629,
+     "ema200": 52.066423,
+     "px": 41.99,
      "notes": [
       "均线空头排列 EMA20<EMA50<EMA200",
       "价格失守 EMA20",
@@ -302,13 +301,13 @@
      "layer": "动量",
      "side": "NEUTRAL",
      "score": -2,
-     "rsi": 31.2,
-     "macdHist": -0.2779,
+     "rsi": 30.8,
+     "macdHist": -0.283005,
      "volRatio": 1.19,
      "volOk": true,
      "divergence": null,
      "notes": [
-      "MACD 柱为负（-0.2779），空头动能维持",
+      "MACD 柱为负（-0.2830），空头动能维持",
       "DIF 在 DEA 之下",
       "近 6 根量能为 30 根均量的 1.19 倍，放量确认"
      ],
@@ -318,15 +317,15 @@
      "layer": "结构",
      "side": "SHORT",
      "score": -3,
-     "pctB": 0.082,
+     "pctB": 0.075,
      "res": 44.77,
      "sup": null,
      "atrPct": 1.98,
      "notes": [
-      "价格位于布林带下半区（%B=0.08）",
-      "上方阻力 44.77（距 6.52%，触碰 1 次）",
+      "价格位于布林带下半区（%B=0.07）",
+      "上方阻力 44.77（距 6.62%，触碰 1 次）",
       "结构下移：更低高点 + 更低低点（LH/LL）",
-      "ATR(14) 波动 1.98% / 根，止损参考 2.96%"
+      "ATR(14) 波动 1.98% / 根，止损参考 2.97%"
      ],
      "confidence": 82
     }
@@ -334,5 +333,5 @@
    "smart": null
   }
  ],
- "cost": 46.2
+ "cost": 51.7
 }
