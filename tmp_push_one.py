@@ -37,5 +37,5 @@ if __name__ == '__main__':
     html = pm.fmt_signal(r)
     print('推送 HTML 长度: %d' % len(html))
 
-    res = pm.wxpush([r])
-    print('wxpush: %s' % res)
+    res, sent = pm.wxpush([r])
+    print('wxpush: %s (发出 %d 条)' % (res, len(sent)))
