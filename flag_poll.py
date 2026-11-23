@@ -51,8 +51,26 @@ MAX_AGE_DAYS = 7          # 只推最近 7 天的公告（300 条覆盖近一个
 EXIT_MIN_NUM = 3.0e7      # 判定「退出」的最小上期持股（3000 万股），小仓位清仓不推
 STANDARD_PERIODS = ('03-31', '06-30', '09-30', '12-31')   # 只认标准报告期
 
+# ---- 可靠性 ----
+# ⚠️ GitHub cron 不保证准时，高负载会整次跳过。ETF 若只比「最新 vs 前一天」，
+#    被跳过那天的份额暴增会永久丢失（下次比的是新的一天 vs 昨天）。
+#    故回看最近 ETF_LOOKBACK 个交易日，逐日对比，用 (code, date) 去重补推。
+ETF_LOOKBACK = 5
+# 数据源连续失败多少次就推一条「监控异常」告警（默认每 20 分钟一轮 → 3 次约 1 小时）
+FAIL_ALERT_STREAK = 3
+# 同一数据源告警的最短间隔（秒），防止 20 分钟一条刷屏
+ALERT_GAP = 6 * 3600
+# 心跳回写间隔：GitHub 对 public repo 的 scheduled workflow 有「60 天无 commit
+# 自动禁用」规则。我们的 commit 只在推送成功时产生，长期无事件就会静默停摆。
+# 故每 7 天强制回写一次状态文件，制造一次 commit。
+HEARTBEAT_DAYS = 7
+
 # 季度数据完整性告警收集（只进日志，不推送）
 INCOMPLETE = []
+
+# 数据源健康标记：区分「真的无变动」和「抓取失败返回空」。
+# 不区分的话接口一挂，日志照样显示「无变动（不推送）」，等于瞎了还报平安。
+SRC_OK = {'increase': False, 'etf': False, 'hkma': False}
 
 # 风向标个股 / 机构关键词
 FLAG_STOCKS = {
@@ -100,11 +118,15 @@ def fetch_increase():
         d = get_json(url, headers={'Referer': 'https://data.eastmoney.com/'})
     except Exception as e:
         print('增减持接口失败:', e)
+        SRC_OK['increase'] = False
         return []
     if not d.get('success'):
         print('增减持接口返回失败:', d.get('message'))
+        SRC_OK['increase'] = False
         return []
-    return ((d.get('result') or {}).get('data')) or []
+    data = ((d.get('result') or {}).get('data')) or []
+    SRC_OK['increase'] = bool(data)
+    return data
 
 
 def amount_of(x):
@@ -229,30 +251,55 @@ def prev_trade_date(dstr):
 
 
 def etf_delta():
-    """宽基 ETF 份额日变化（万份）"""
+    """宽基 ETF 份额日变化（万份）
+
+    ⚠️ 必须回看多天，不能只比「最新 vs 前一天」：
+    GitHub cron 会被整次跳过，若只比最后两天，被跳过那天的暴增就永久丢了
+    （下一轮比的是新的一天 vs 昨天，中间那天再也不参与比较）。
+    这里逐日回看 ETF_LOOKBACK 个交易日，每对相邻日都算一次变化，
+    再由调用方按 (code, date) 去重补推。
+    """
     cur = fetch_etf_snapshot('')
     if not cur:
+        SRC_OK['etf'] = False
         return []
     d0 = next((v['date'] for v in cur.values() if v.get('date')), '')
     if not d0:
+        SRC_OK['etf'] = False
         return []
-    prev = fetch_etf_snapshot(prev_trade_date(d0))
+    SRC_OK['etf'] = True
+
+    snaps = {d0: cur}
+    d = d0
+    for _ in range(ETF_LOOKBACK):
+        d = prev_trade_date(d)
+        if not d:
+            break
+        s = fetch_etf_snapshot(d)
+        if s:
+            snaps[d] = s
+
     out = []
-    for code, v in cur.items():
-        p = prev.get(code)
-        if not p:
-            continue
-        dv = v['vol'] - p['vol']          # 万份
-        if abs(dv) < ETF_HEAVY * 10000:   # 阈值换算成万份
-            continue
-        out.append({
-            'code': code, 'name': v['name'],
-            'date': v['date'], 'prevDate': p['date'],
-            'vol': v['vol'], 'prevVol': p['vol'],
-            'delta': dv,                  # 万份
-            'deltaYi': dv / 10000.0,      # 亿份
-        })
-    out.sort(key=lambda z: -abs(z['delta']))
+    days = sorted(snaps.keys(), reverse=True)
+    for i in range(len(days) - 1):
+        cd, pd = days[i], days[i + 1]
+        c, p = snaps[cd], snaps[pd]
+        for code, v in c.items():
+            pv = p.get(code)
+            if not pv:
+                continue
+            dv = v['vol'] - pv['vol']          # 万份
+            if abs(dv) < ETF_HEAVY * 10000:    # 阈值换算成万份
+                continue
+            out.append({
+                'code': code, 'name': v['name'],
+                'date': cd, 'prevDate': pd,
+                'vol': v['vol'], 'prevVol': pv['vol'],
+                'delta': dv,                  # 万份
+                'deltaYi': dv / 10000.0,      # 亿份
+            })
+    # 最近的日期优先，同日按幅度
+    out.sort(key=lambda z: (z['date'], abs(z['delta'])), reverse=True)
     return out
 
 
@@ -410,10 +457,13 @@ def fetch_hkma():
         d = get_json(HKMA_LIQ, timeout=30)
     except Exception as e:
         print('HKMA 接口失败:', e)
+        SRC_OK['hkma'] = False
         return []
     recs = (d.get('result') or {}).get('records') or []
     if len(recs) < 2:
+        SRC_OK['hkma'] = False
         return []
+    SRC_OK['hkma'] = True
     out = []
     # ⚠️ records 按日期倒序（recs[0] 最新）。所以「较前一日的变化」是
     #    recs[i] 减 recs[i+1]。写成 recs[i-1] 会在 i=0 时取到 recs[-1]
@@ -553,9 +603,12 @@ def fmt_etf(e):
              '🏛 %s %s %.2f 亿份</div>'
              % (col, esc(e['name']), '净申购' if inflow else '净赎回',
                 abs(e['deltaYi'])))
+    # ⚠️ 必须同时标出对比基准日：回看机制下若中间某天快照抓取失败，
+    #    会跨过那天做累计对比（比漏掉好），但得让用户看得出这不是单日变化。
     h.append('<div style="font-size:12px;color:#333;margin-top:3px">'
-             '%s：%.2f 亿份 → %.2f 亿份</div>'
-             % (esc(e['date']), e['prevVol'] / 10000.0, e['vol'] / 10000.0))
+             '%s（较 %s）：%.2f 亿份 → %.2f 亿份</div>'
+             % (esc(e['date']), esc(e.get('prevDate') or ''),
+                e['prevVol'] / 10000.0, e['vol'] / 10000.0))
     h.append('<div style="font-size:11px;color:#888">'
              '宽基 ETF 巨额申赎是国家队进出的主要痕迹（汇金不公告）</div>')
     h.append('</div>')
@@ -661,21 +714,36 @@ def main():
     etf_done = st.setdefault('etf', {})
     now = int(time.time())
 
+    # 每个数据源独立 try：一个接口挂了不能拖垮其他三条线。
+    # 之前 fetch_increase 没包 try，它一抛异常整个 main 就崩，
+    # 连金管局都推不了。
+
     # --- 增减持 ---
-    rows = fetch_increase()
-    heavy = pick_heavy_increase(rows)
-    fresh = [z for z in heavy if z['key'] not in pushed]
-    # 限制条数：风向标必留，其余按金额
-    flags = [z for z in fresh if z['flag']]
-    others = [z for z in fresh if not z['flag']]
-    keep = flags + others[:max(0, MAX_PUSH_ITEMS - len(flags))]
+    rows, heavy, fresh, keep = [], [], [], []
+    try:
+        rows = fetch_increase()
+        heavy = pick_heavy_increase(rows)
+        fresh = [z for z in heavy if z['key'] not in pushed]
+        # 限制条数：风向标必留，其余按金额
+        flags = [z for z in fresh if z['flag']]
+        others = [z for z in fresh if not z['flag']]
+        keep = flags + others[:max(0, MAX_PUSH_ITEMS - len(flags))]
+    except Exception as e:
+        print('增减持处理失败:', e)
 
     # --- ETF ---
+    # ⚠️ etf_delta() 只算一次：回看 5 天要发 6 个请求，之前打印日志时又调一遍
+    #    等于白跑 6 个请求，既慢又容易被上交所限流。
     etfs = []
-    for e in etf_delta():
-        k = '%s|%s' % (e['code'], e['date'])
-        if k not in etf_done:
-            etfs.append((k, e))
+    etf_raw = []
+    try:
+        etf_raw = etf_delta()
+        for e in etf_raw:
+            k = '%s|%s' % (e['code'], e['date'])
+            if k not in etf_done:
+                etfs.append((k, e))
+    except Exception as e:
+        print('ETF 处理失败:', e)
 
     # --- 汇金/社保 季度持仓变化（报告期变化才推）---
     holds = []
@@ -706,7 +774,8 @@ def main():
 
     print('增减持: 扫描 %d 条 -> 重量级 %d 条 -> 新增 %d 条（推送 %d 条）'
           % (len(rows), len(heavy), len(fresh), len(keep)))
-    print('ETF: 异动 %d 个 -> 新增 %d 个' % (len(etf_delta()), len(etfs)))
+    print('ETF: 回看 %d 个交易日, 异动 %d 个 -> 新增 %d 个'
+          % (ETF_LOOKBACK, len(etf_raw), len(etfs)))
     print('汇金/社保持仓: %s' % (
         ('新增变化 %d 条' % len(holds)) if holds else '无变动（不推送）'))
     if INCOMPLETE:
@@ -717,14 +786,60 @@ def main():
     print('香港金管局: %s' % (
         ('新增干预 %d 条' % len(hk)) if hk else '无变动（不推送）'))
 
-    if not keep and not etfs and not holds and not hk:
+    # --- 数据源健康检查 ---
+    # 接口挂掉时各 fetch 会返回空，日志看起来和「真的无变动」一模一样。
+    # 这里按源记连续失败次数，连续 FAIL_ALERT_STREAK 次就主动推告警，
+    # 让「监控瞎了」这件事本身变成一条推送。
+    health = st.setdefault('health', {})
+    bad = []
+    for src, label in (('increase', '东财增减持'), ('etf', '上交所ETF份额'),
+                       ('hkma', '香港金管局')):
+        h = health.setdefault(src, {'fail': 0, 'lastOk': 0, 'lastAlert': 0})
+        if SRC_OK[src]:
+            h['fail'] = 0
+            h['lastOk'] = now
+        else:
+            h['fail'] = int(h.get('fail') or 0) + 1
+            # 同一数据源最短告警间隔 6 小时，否则每 20 分钟一条会变成骚扰
+            if (h['fail'] >= FAIL_ALERT_STREAK
+                    and now - int(h.get('lastAlert') or 0) > ALERT_GAP):
+                bad.append((label, h['fail'], h['lastOk'], src))
+    if bad:
+        print('[告警] 数据源连续失败:', [(b[0], b[1]) for b in bad])
+
+    if not keep and not etfs and not holds and not hk and not bad:
         print('done: 无新增，不推送 cost=%.1fs' % (time.time() - t0))
         save_state(st)
+        # 心跳：GitHub 对 public repo 有「60 天无 commit 自动禁用 schedule」规则，
+        # 而我们的 commit 只在推送成功时产生。长期无事件 → 无 commit → 被禁用 → 永久停摆。
+        # 所以每 HEARTBEAT_DAYS 天强制回写一次状态文件，制造一次 commit 保活。
+        if now - int(st.get('lastBeat') or 0) > HEARTBEAT_DAYS * 86400:
+            st['lastBeat'] = now
+            save_state(st)
+            print('心跳回写（防 GitHub 60 天无 commit 自动禁用）')
+            push_state_to_repo()
         return
 
     # --- 组装推送 ---
-    # 顺序：香港金管局（政府买卖美元，最直接）> 国家队 ETF > 汇金/社保季度 > 个股增减持
+    # 顺序：数据源异常（最重要，说明后面几条可能是瞎的）> 香港金管局
+    #       > 国家队 ETF > 汇金/社保季度 > 个股增减持
     parts = []
+    if bad:
+        rows_html = []
+        for label, streak, lastOk, _src in bad:
+            if lastOk:
+                ago = (now - int(lastOk)) / 3600.0
+                tail = '上次成功 %.1f 小时前' % ago
+            else:
+                tail = '从未成功过'
+            rows_html.append(
+                '<div style="padding:6px 10px;background:#fff7ed;border-left:3px'
+                ' solid #f59e0b;margin:4px 0;font-size:13px">'
+                '<b>%s</b> 连续失败 %d 次 · %s</div>' % (label, streak, tail))
+        parts.append('<div style="font-size:13px;color:#b45309;margin:6px 0">'
+                     '<b>⚠️ 监控数据源异常</b>（这几条线暂时是瞎的，'
+                     '不代表「无变动」）</div>')
+        parts.extend(rows_html)
     if hk:
         parts.append('<div style="font-size:13px;color:#555;margin:6px 0">'
                      '<b>🇭🇰 香港金管局 · 政府买卖美元</b>（每日公布）</div>')
@@ -743,7 +858,9 @@ def main():
         parts.extend(fmt_item(z) for z in keep)
 
     # 摘要：按重要性取第一条
-    if hk:
+    if bad:
+        summary = '⚠️监控异常：%s 连续失败' % bad[0][0]
+    elif hk:
         z0 = hk[0][1]
         summary = '🇭🇰金管局%s%.1f亿港元' % (
             '买入美元' if z0['inflow'] else '卖出美元', abs(z0['delta']))
@@ -759,10 +876,13 @@ def main():
         summary = '%s %s %s · 约%s' % (top['dir'], top['name'],
                                        '★风向标' if top['flag'] else '',
                                        yi(top['amount']))
-    if holds and not hk:
+    if holds and not hk and not bad:
         summary += ' | 持仓变动%d条' % len(holds)
 
-    title = '📊 风向标异动 · 增减持/国家队'
+    if bad:
+        title = '⚠️ 风向标监控异常'
+    else:
+        title = '📊 风向标异动 · 增减持/国家队'
     res = wxpush(title, ''.join(parts), summary)
     print('推送结果:', res)
 
@@ -775,17 +895,22 @@ def main():
             hold_done[k] = now
         for k, _ in hk:
             hk_done[k] = now
+        # 告警推送成功后记录时间，6 小时内不再重复告警
+        for _label, _streak, _lastOk, src in bad:
+            health.setdefault(src, {})['lastAlert'] = now
         # 状态瘦身：只保留 30 天
         cut = now - 30 * 86400
         st['pushed'] = {k: v for k, v in pushed.items() if v > cut}
         st['etf'] = {k: v for k, v in etf_done.items() if v > cut}
         st['hold'] = {k: v for k, v in hold_done.items() if v > cut}
         st['hkma'] = {k: v for k, v in hk_done.items() if v > cut}
+        st['lastBeat'] = now      # 这次 commit 也算一次保活
         save_state(st)
         push_state_to_repo()
 
-    print('done: 金管局%d 增减持%d ETF%d 持仓%d cost=%.1fs push=%s'
-          % (len(hk), len(keep), len(etfs), len(holds), time.time() - t0, res))
+    print('done: 金管局%d 增减持%d ETF%d 持仓%d 异常%d cost=%.1fs push=%s'
+          % (len(hk), len(keep), len(etfs), len(holds), len(bad),
+             time.time() - t0, res))
 
 
 if __name__ == '__main__':
