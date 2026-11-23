@@ -46,4 +46,14 @@ jobs:
           if [ -f market_state.json ]; then git add market_state.json; fi
           git diff --cached --quiet && echo "no change" && exit 0
           git commit -m "snapshot $(date -u +%FT%TZ)"
-          git push
+          # ⚠️ probe.yml 也在往 main 推，撞上就是
+          #    `! [rejected] main -> main (fetch first)`，之前直接失败过。
+          #    rebase 后重试，最多 3 次。
+          for i in 1 2 3; do
+            if git push; then echo "push ok"; exit 0; fi
+            echo "push 被拒（第 $i 次），rebase 后重试"
+            git pull --rebase --autostash origin main || true
+            sleep 3
+          done
+          echo "::error::push 连续 3 次失败，本轮快照未提交（下一轮会重新生成）"
+          exit 1
