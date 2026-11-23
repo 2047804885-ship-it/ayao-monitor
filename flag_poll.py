@@ -120,6 +120,37 @@ def get_json(url, timeout=25, headers=None, data=None):
         return json.loads(r.read().decode('utf-8', 'ignore'))
 
 
+# 上交所对 GitHub Actions 的共享出口 IP 会间歇性返回 403/429（本地跑没事，
+# 线上偶发）。单次失败绝不能当成「没有数据」，否则 ETF 这条线会静默失明。
+RETRY_CODES = (403, 429, 500, 502, 503, 504)
+
+
+def get_json_retry(url, timeout=25, headers=None, tries=3, base_wait=2.0):
+    """带指数退避的 GET"""
+    last = None
+    for i in range(tries):
+        try:
+            return get_json(url, timeout=timeout, headers=headers)
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code in RETRY_CODES and i < tries - 1:
+                wait = base_wait * (i + 1)
+                print('  HTTP %d，%.0fs 后重试（%d/%d）' % (e.code, wait, i + 1, tries))
+                time.sleep(wait)
+                continue
+            raise
+        except Exception as e:
+            last = e
+            if i < tries - 1:
+                wait = base_wait * (i + 1)
+                print('  请求异常 %s，%.0fs 后重试（%d/%d）'
+                      % (str(e)[:60], wait, i + 1, tries))
+                time.sleep(wait)
+                continue
+            raise
+    raise last
+
+
 # ============================================================
 #  一、上市公司 / 中石油增减持
 # ============================================================
@@ -130,7 +161,7 @@ def fetch_increase():
            '&pageNumber=1&pageSize=%d&sortColumns=NOTICE_DATE&sortTypes=-1'
            % SCAN_ROWS)
     try:
-        d = get_json(url, headers={'Referer': 'https://data.eastmoney.com/'})
+        d = get_json_retry(url, headers={'Referer': 'https://data.eastmoney.com/'})
     except Exception as e:
         print('增减持接口失败:', e)
         SRC_OK['increase'] = False
@@ -231,7 +262,8 @@ def fetch_etf_snapshot(date=''):
     url = ('http://query.sse.com.cn/commonQuery.do?'
            'sqlId=COMMON_SSE_ZQPZ_ETFZL_XXPL_ETFGM_SEARCH_L&STAT_DATE=%s' % date)
     try:
-        d = get_json(url, headers={'Referer': 'http://www.sse.com.cn/'})
+        d = get_json_retry(url, headers={'Referer': 'http://www.sse.com.cn/'},
+                           tries=3, base_wait=2.5)
     except Exception as e:
         print('ETF 份额接口失败(%s):' % (date or '最新'), e)
         return {}
@@ -290,6 +322,8 @@ def etf_delta():
         d = prev_trade_date(d)
         if not d:
             break
+        # 上交所对连续请求敏感，逐日之间留点间隔，别把 6 个请求打成一阵
+        time.sleep(0.8)
         s = fetch_etf_snapshot(d)
         if s:
             snaps[d] = s
@@ -469,7 +503,7 @@ def fetch_hkma():
     cutoff = (datetime.date.today()
               - datetime.timedelta(days=HKMA_DAYS)).strftime('%Y-%m-%d')
     try:
-        d = get_json(HKMA_LIQ, timeout=30)
+        d = get_json_retry(HKMA_LIQ, timeout=30)
     except Exception as e:
         print('HKMA 接口失败:', e)
         SRC_OK['hkma'] = False
