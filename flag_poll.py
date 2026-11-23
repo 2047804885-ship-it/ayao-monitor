@@ -51,7 +51,10 @@ HEAVY_AMOUNT = 1.0e8      # 单笔 1 亿元
 HEAVY_RATIO = 20.0        # 变动比例 20%（大幅增减持）
 ETF_HEAVY = 20.0          # ETF 单日净申购 20 亿份
 SCAN_ROWS = 300           # 每次扫最近 300 条公告
-MAX_PUSH_ITEMS = 6        # 单次推送最多几条，超了只推最重的
+# ⚠️ 不要再用「单次最多推几条」来截断——那是主动丢包。
+#    改成「每条消息最多放几张卡 + 字符预算」，超了拆成多条消息依次发完。
+ITEMS_PER_MSG = 6         # 单条微信消息最多放几张卡（超出拆下一条）
+CHAR_BUDGET = 11000       # 单条消息字符预算（WxPusher content 上限约 20K，留足余量）
 MAX_AGE_DAYS = 7          # 只推最近 7 天的公告（300 条覆盖近一个月，老公告没意义）
 EXIT_MIN_NUM = 3.0e7      # 判定「退出」的最小上期持股（3000 万股），小仓位清仓不推
 STANDARD_PERIODS = ('03-31', '06-30', '09-30', '12-31')   # 只认标准报告期
@@ -70,8 +73,10 @@ ALERT_GAP = 6 * 3600
 # 故每 7 天强制回写一次状态文件，制造一次 commit。
 HEARTBEAT_DAYS = 7
 # 备份线判定「主线失联」的阈值：主线最近一次成功运行距今超过这么多分钟，就接管。
-# 主线 cron 是 7/27/47 分（20 分钟一轮），单轮约 25 秒，45 分钟 ≈ 连丢 2 轮。
-STALE_MIN = 45
+# 主线 cron 是 10 分钟一轮（2,12,22,32,42,52），单轮约 25 秒，
+# 30 分钟 ≈ 连丢 3 轮。取 30 而不是 45：接管本身是无害的（共享 state 去重，
+# 不会重复推），所以宁可早点接上，别让用户空窗太久。
+STALE_MIN = 30
 # 接管提示的最短间隔（秒），防止备份线每 10 分钟推一条
 TAKEOVER_NOTICE_GAP = 2 * 3600
 
@@ -732,6 +737,47 @@ def fmt_hkma(z):
     return ''.join(h)
 
 
+def pack_messages(sections):
+    """把卡片打包成多条消息，保证一条都不丢
+
+    sections: [(section_header_html, [(card_html, [state_keys])])]
+    返回:     [{'html': str, 'keys': [...]}]
+
+    规则：每条消息最多 ITEMS_PER_MSG 张卡、不超过 CHAR_BUDGET 字符。
+    换到下一条消息时，如果该 section 还没结束，会把 section 标题重新输出一遍，
+    否则第二、三条消息里的卡片会没有分类标题、看不懂是哪一类。
+    """
+    msgs = []
+    cur = []
+    keys = []
+    clen = 0
+    ncards = 0
+
+    def flush():
+        nonlocal cur, keys, clen, ncards
+        if cur:
+            msgs.append({'html': ''.join(cur), 'keys': list(keys)})
+        cur, keys, clen, ncards = [], [], 0, 0
+
+    for header, cards in sections:
+        hdr_pending = header
+        for card_html, ckeys in cards:
+            extra = len(card_html) + (len(hdr_pending) if hdr_pending else 0)
+            if cur and (clen + extra > CHAR_BUDGET or ncards >= ITEMS_PER_MSG):
+                flush()
+                hdr_pending = header      # 换了消息，标题重出
+            if hdr_pending:
+                cur.append(hdr_pending)
+                clen += len(hdr_pending)
+                hdr_pending = None
+            cur.append(card_html)
+            clen += len(card_html)
+            ncards += 1
+            keys.extend(ckeys)
+    flush()
+    return msgs
+
+
 def wxpush(title, body_html, summary):
     token = os.environ.get('WXPUSHER_TOKEN', '').strip()
     uid = os.environ.get('WXPUSHER_UID', '').strip()
@@ -781,10 +827,11 @@ def main():
         rows = fetch_increase()
         heavy = pick_heavy_increase(rows)
         fresh = [z for z in heavy if z['key'] not in pushed]
-        # 限制条数：风向标必留，其余按金额
+        # 风向标排前面，其余按金额。⚠️ 全部保留，不再截断（截断=丢包），
+        # 超长由后面的分批发消息处理。
         flags = [z for z in fresh if z['flag']]
         others = [z for z in fresh if not z['flag']]
-        keep = flags + others[:max(0, MAX_PUSH_ITEMS - len(flags))]
+        keep = flags + others
     except Exception as e:
         print('增减持处理失败:', e)
 
@@ -812,9 +859,8 @@ def main():
                 holds.append((k, z))
     except Exception as e:
         print('季度持仓处理失败:', e)
-    # 季度数据一次可能几十条，只推最重的前 8 条
+    # 季度数据一次可能几十条，全部保留，超长由分批推送处理
     holds.sort(key=lambda kv: -abs((kv[1]['num'] or 0) - (kv[1]['oldNum'] or 0)))
-    holds = holds[:8]
 
     # --- 香港金管局干预（每日）---
     hk = []
@@ -827,7 +873,7 @@ def main():
     except Exception as e:
         print('金管局处理失败:', e)
     hk.sort(key=lambda kv: kv[1]['date'], reverse=True)   # 最近的优先，别推几个月前的
-    hk = hk[:4]
+    # 全部保留（窗口内本来就不多），不再截断
 
     print('增减持: 扫描 %d 条 -> 重量级 %d 条 -> 新增 %d 条（推送 %d 条）'
           % (len(rows), len(heavy), len(fresh), len(keep)))
@@ -897,9 +943,12 @@ def main():
     # --- 组装推送 ---
     # 顺序：数据源异常（最重要，说明后面几条可能是瞎的）> 香港金管局
     #       > 国家队 ETF > 汇金/社保季度 > 个股增减持
-    parts = []
-    if banner:
-        parts.append(banner)
+    #
+    # ⚠️ 这里不再拼成一个大字符串。改成「分组 → 逐卡打包成多条消息」：
+    #    微信单条 content 有长度上限，条数一多就会被截断，那才是真正的丢包。
+    #    每张卡都带着自己的 state key，最后只标记「确实发出去的那几条」。
+    sections = []      # [(section_header_html, [(card_html, [keys])])]
+
     if bad:
         rows_html = []
         for label, streak, lastOk, _src in bad:
@@ -912,26 +961,30 @@ def main():
                 '<div style="padding:6px 10px;background:#fff7ed;border-left:3px'
                 ' solid #f59e0b;margin:4px 0;font-size:13px">'
                 '<b>%s</b> 连续失败 %d 次 · %s</div>' % (label, streak, tail))
-        parts.append('<div style="font-size:13px;color:#b45309;margin:6px 0">'
-                     '<b>⚠️ 监控数据源异常</b>（这几条线暂时是瞎的，'
-                     '不代表「无变动」）</div>')
-        parts.extend(rows_html)
+        hdr = ('<div style="font-size:13px;color:#b45309;margin:6px 0">'
+               '<b>⚠️ 监控数据源异常</b>（这几条线暂时是瞎的，'
+               '不代表「无变动」）</div>')
+        sections.append((hdr, [(h, []) for h in rows_html]))
+
     if hk:
-        parts.append('<div style="font-size:13px;color:#555;margin:6px 0">'
-                     '<b>🇭🇰 香港金管局 · 政府买卖美元</b>（每日公布）</div>')
-        parts.extend(fmt_hkma(z) for _, z in hk)
+        hdr = ('<div style="font-size:13px;color:#555;margin:6px 0">'
+               '<b>🇭🇰 香港金管局 · 政府买卖美元</b>（每日公布）</div>')
+        sections.append((hdr, [(fmt_hkma(z), [k]) for k, z in hk]))
+
     if etfs:
-        parts.append('<div style="font-size:13px;color:#555;margin:10px 0 6px">'
-                     '<b>🏛 国家队 ETF 动向</b>（汇金/国家队代理指标）</div>')
-        parts.extend(fmt_etf(e) for _, e in etfs)
+        hdr = ('<div style="font-size:13px;color:#555;margin:10px 0 6px">'
+               '<b>🏛 国家队 ETF 动向</b>（汇金/国家队代理指标）</div>')
+        sections.append((hdr, [(fmt_etf(e), [k]) for k, e in etfs]))
+
     if holds:
-        parts.append('<div style="font-size:13px;color:#555;margin:10px 0 6px">'
-                     '<b>🏦 汇金 / 社保 季度持仓变化</b>（季报披露）</div>')
-        parts.extend(fmt_holding(z) for _, z in holds)
+        hdr = ('<div style="font-size:13px;color:#555;margin:10px 0 6px">'
+               '<b>🏦 汇金 / 社保 季度持仓变化</b>（季报披露）</div>')
+        sections.append((hdr, [(fmt_holding(z), [k]) for k, z in holds]))
+
     if keep:
-        parts.append('<div style="font-size:13px;color:#555;margin:10px 0 6px">'
-                     '<b>上市公司增减持</b>（重量级，按金额排序）</div>')
-        parts.extend(fmt_item(z) for z in keep)
+        hdr = ('<div style="font-size:13px;color:#555;margin:10px 0 6px">'
+               '<b>上市公司增减持</b>（重量级，按金额排序）</div>')
+        sections.append((hdr, [(fmt_item(z), [z['key']]) for z in keep]))
 
     # 摘要：按重要性取第一条
     if bad:
@@ -959,18 +1012,48 @@ def main():
         title = '⚠️ 风向标监控异常'
     else:
         title = '📊 风向标异动 · 增减持/国家队'
-    res = wxpush(title, ''.join(parts), summary)
-    print('推送结果:', res)
+
+    # 前置块（接管提示 / 数据源告警）只放在第一条
+    pre = banner
+
+    msgs = pack_messages(sections)
+    if not msgs:
+        msgs = [{'html': '', 'keys': []}]
+
+    total = len(msgs)
+    sent_keys = []
+    fail_msg = ''
+    for i, m in enumerate(msgs, 1):
+        t = title if total == 1 else '%s（%d/%d）' % (title, i, total)
+        body = (pre if i == 1 else '') + m['html']
+        s = summary if total == 1 else '%s · 第%d/%d条' % (summary, i, total)
+        r = wxpush(t, body, s)
+        print('推送 %d/%d: %s' % (i, total, r))
+        if r == 'ok':
+            sent_keys.extend(m['keys'])
+        else:
+            fail_msg = r
+
+    res = 'ok' if not fail_msg else fail_msg
+
+    # ⚠️ 只标记「确实发出去」的条目。某条消息失败时，它里面的条目
+    #    不进 state，下一轮会自动重试——这才是「不丢包」。
+    if sent_keys:
+        sent = set(sent_keys)
+        for z in keep:
+            if z['key'] in sent:
+                pushed[z['key']] = now
+        for k, _ in etfs:
+            if k in sent:
+                etf_done[k] = now
+        for k, _ in holds:
+            if k in sent:
+                hold_done[k] = now
+        for k, _ in hk:
+            if k in sent:
+                hk_done[k] = now
 
     if res == 'ok':
-        for z in keep:
-            pushed[z['key']] = now
-        for k, _ in etfs:
-            etf_done[k] = now
-        for k, _ in holds:
-            hold_done[k] = now
-        for k, _ in hk:
-            hk_done[k] = now
         # 告警推送成功后记录时间，6 小时内不再重复告警
         for _label, _streak, _lastOk, src in bad:
             health.setdefault(src, {})['lastAlert'] = now
@@ -985,9 +1068,14 @@ def main():
         st['lastBeat'] = now      # 这次 commit 也算一次保活
         save_state(st)
         push_state_to_repo()
+    elif sent_keys:
+        # 部分成功：已发的先记下来，避免下轮重复；失败的条目留到下一轮
+        save_state(st)
+        push_state_to_repo()
+        print('部分消息发送失败，已发 %d 条已记状态，其余下轮重试' % len(sent_keys))
 
-    print('done: 金管局%d 增减持%d ETF%d 持仓%d 异常%d cost=%.1fs push=%s'
-          % (len(hk), len(keep), len(etfs), len(holds), len(bad),
+    print('done: 金管局%d 增减持%d ETF%d 持仓%d 异常%d 消息%d条 cost=%.1fs push=%s'
+          % (len(hk), len(keep), len(etfs), len(holds), len(bad), total,
              time.time() - t0, res))
 
 
