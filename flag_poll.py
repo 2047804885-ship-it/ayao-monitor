@@ -51,6 +51,9 @@ MAX_AGE_DAYS = 7          # 只推最近 7 天的公告（300 条覆盖近一个
 EXIT_MIN_NUM = 3.0e7      # 判定「退出」的最小上期持股（3000 万股），小仓位清仓不推
 STANDARD_PERIODS = ('03-31', '06-30', '09-30', '12-31')   # 只认标准报告期
 
+# 季度数据完整性告警收集（只进日志，不推送）
+INCOMPLETE = []
+
 # 风向标个股 / 机构关键词
 FLAG_STOCKS = {
     '601857': '中国石油',
@@ -303,6 +306,17 @@ def fetch_holdings_change():
             continue
         cur_d, prev_d = dates[0], dates[1]
         cur, prev = by_date[cur_d], by_date[prev_d]
+
+        # ⚠️ 数据完整性体检：东财个别报告期披露只数会突然掉到历史峰值的零头。
+        #    实测「中央汇金资产管理」2025Q1~2026Q1 稳定在 143~152 只，到
+        #    2026-06-30 / 2026-09-30 只剩 16 只——一个季度清仓 127 只票会是
+        #    市场级新闻，故判为东财该两期数据不全，而非真实退出。
+        #    这里只记告警、不推送：告警会写进 Actions 日志，方便发现「静默其实是瞎了」。
+        hist_max = max(len(v) for v in by_date.values())
+        if hist_max and len(cur) < hist_max * 0.5:
+            peak_d = [d for d in by_date if len(by_date[d]) == hist_max][0]
+            INCOMPLETE.append('%s %s 仅 %d 只 / 历史峰值 %d 只（%s）'
+                              % (label, cur_d, len(cur), hist_max, peak_d))
 
         for code, x in cur.items():
             try:
@@ -695,6 +709,11 @@ def main():
     print('ETF: 异动 %d 个 -> 新增 %d 个' % (len(etf_delta()), len(etfs)))
     print('汇金/社保持仓: %s' % (
         ('新增变化 %d 条' % len(holds)) if holds else '无变动（不推送）'))
+    if INCOMPLETE:
+        print('[告警] 季度数据不全，以下主体本期披露只数不足历史峰值一半，'
+              '「无变动」可能只是看不到：')
+        for w in INCOMPLETE:
+            print('  - ' + w)
     print('香港金管局: %s' % (
         ('新增干预 %d 条' % len(hk)) if hk else '无变动（不推送）'))
 
