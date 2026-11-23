@@ -929,14 +929,18 @@ def main():
     # 让「监控瞎了」这件事本身变成一条推送。
     health = st.setdefault('health', {})
     bad = []
+    health_dirty = False
     for src, label in (('increase', '东财增减持'), ('etf', '上交所ETF份额'),
                        ('hkma', '香港金管局')):
         h = health.setdefault(src, {'fail': 0, 'lastOk': 0, 'lastAlert': 0})
         if SRC_OK[src]:
+            if int(h.get('fail') or 0) > 0:
+                health_dirty = True      # 从失败恢复，要把清零结果落盘
             h['fail'] = 0
             h['lastOk'] = now
         else:
             h['fail'] = int(h.get('fail') or 0) + 1
+            health_dirty = True
             # 同一数据源最短告警间隔 6 小时，否则每 20 分钟一条会变成骚扰
             if (h['fail'] >= FAIL_ALERT_STREAK
                     and now - int(h.get('lastAlert') or 0) > ALERT_GAP):
@@ -964,6 +968,11 @@ def main():
     if not keep and not etfs and not holds and not hk and not bad and not takeover:
         print('done: 无新增，不推送 cost=%.1fs' % (time.time() - t0))
         save_state(st)
+        # ⚠️ 失败计数必须落盘，否则「连续失败 3 次」永远累计不起来：
+        #    每轮都是全新 checkout，读回来还是 0，告警就永远不会触发。
+        if health_dirty:
+            print('数据源健康计数变化已落盘')
+            push_state_to_repo()
         # 心跳：GitHub 对 public repo 有「60 天无 commit 自动禁用 schedule」规则，
         # 而我们的 commit 只在推送成功时产生。长期无事件 → 无 commit → 被禁用 → 永久停摆。
         # 所以每 HEARTBEAT_DAYS 天强制回写一次状态文件，制造一次 commit 保活。
