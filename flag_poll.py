@@ -48,6 +48,8 @@ ETF_HEAVY = 20.0          # ETF 单日净申购 20 亿份
 SCAN_ROWS = 300           # 每次扫最近 300 条公告
 MAX_PUSH_ITEMS = 6        # 单次推送最多几条，超了只推最重的
 MAX_AGE_DAYS = 7          # 只推最近 7 天的公告（300 条覆盖近一个月，老公告没意义）
+EXIT_MIN_NUM = 3.0e7      # 判定「退出」的最小上期持股（3000 万股），小仓位清仓不推
+STANDARD_PERIODS = ('03-31', '06-30', '09-30', '12-31')   # 只认标准报告期
 
 # 风向标个股 / 机构关键词
 FLAG_STOCKS = {
@@ -286,10 +288,15 @@ def fetch_holdings_change():
         rows = _query_holders(name, since)
         if not rows:
             continue
-        # 按报告期分组
+        # 按报告期分组。
+        # ⚠️ 只认标准报告期（3-31/6-30/9-30/12-31）：东财 END_DATE 里混着大量
+        #    个别公司提前披露的日期（10-23、05-29、09-11…），往往只有 1 只股票。
+        #    不过滤的话「最近两期」会变成「1 只 vs 8 只」，对比结果全是假信号。
         by_date = {}
         for x in rows:
             d = str(x.get('END_DATE'))[:10]
+            if not d.endswith(STANDARD_PERIODS):
+                continue
             by_date.setdefault(d, {})[str(x.get('SECURITY_CODE'))] = x
         dates = sorted(by_date.keys(), reverse=True)
         if len(dates) < 2:
@@ -306,12 +313,15 @@ def fetch_holdings_change():
                 continue
             old = prev.get(code)
             if not old:
-                out.append({
-                    'kind': '新进', 'who': label, 'code': code,
-                    'name': x.get('SECURITY_NAME_ABBR'),
-                    'num': n_new, 'oldNum': 0, 'ratio': x.get('HOLD_NUM_RATIO'),
-                    'curDate': cur_d, 'prevDate': prev_d,
-                })
+                # 新进：上期完全没有这只票。但若上期数据不完整，会误判成「新进」，
+                # 故只在两期条数接近时才认。
+                if len(prev) >= len(cur) * 0.7:
+                    out.append({
+                        'kind': '新进', 'who': label, 'code': code,
+                        'name': x.get('SECURITY_NAME_ABBR'),
+                        'num': n_new, 'oldNum': 0, 'ratio': x.get('HOLD_NUM_RATIO'),
+                        'curDate': cur_d, 'prevDate': prev_d,
+                    })
                 continue
             try:
                 n_old = float(old.get('HOLD_NUM') or 0)
@@ -332,9 +342,35 @@ def fetch_holdings_change():
                 'curDate': cur_d, 'prevDate': prev_d,
             })
 
-    # 减持/新进按幅度排序，增持优先展示
-    out.sort(key=lambda z: (0 if z['kind'] != '减持' else 1,
-                            -abs(z['num'] - z['oldNum'])))
+        # 退出（清仓/跌出前十大）：上期有、这期没了。这是很强的信号，
+        # 但极易被「当期数据不全」误判——实测 2026-09-30 汇金资管只披露 17 条，
+        # 而上期有上百条，一对比就会冒出几十条假「退出」。故加双重保护：
+        #   ① 当期条数 >= 上期的 70%（数据完整性）
+        #   ② 上期持股 >= EXIT_MIN_NUM 股（小仓位退出无意义）
+        if len(cur) >= len(prev) * 0.7:
+            for code, x in prev.items():
+                if code in cur:
+                    continue
+                try:
+                    n_old = float(x.get('HOLD_NUM') or 0)
+                except Exception:
+                    continue
+                if n_old < EXIT_MIN_NUM:
+                    continue
+                out.append({
+                    'kind': '退出', 'who': label, 'code': code,
+                    'name': x.get('SECURITY_NAME_ABBR'),
+                    'num': 0, 'oldNum': n_old, 'ratio': x.get('HOLD_NUM_RATIO'),
+                    'curDate': cur_d, 'prevDate': prev_d,
+                })
+
+    # 排序：退出/减持这类「减少」的信号优先（风险提示优先），再按变动股数
+    def _abs_delta(z):
+        return abs((z['num'] or 0) - (z['oldNum'] or 0))
+
+    out.sort(key=lambda z: (
+        0 if z['kind'] in ('退出', '减持') else 1,
+        -_abs_delta(z)))
     return out
 
 
@@ -518,26 +554,32 @@ def fmt_holding(z):
     col = '#d32f2f' if up else '#2e7d32'
     bg = '#fef2f2' if up else '#f0fdf4'
     mark = '🟢' if up else '🔴'
-    delta = z['num'] - z['oldNum']
     if z['kind'] == '新进':
         detail = '新进 %.2f 亿股' % (z['num'] / 1e8)
+    elif z['kind'] == '退出':
+        detail = '清仓 / 跌出前十大，原持 %.2f 亿股' % (z['oldNum'] / 1e8)
     else:
+        delta = z['num'] - z['oldNum']
         pct = (delta / z['oldNum'] * 100) if z['oldNum'] else 0
         detail = '%s %.2f 亿股（%+.1f%%）' % (
             z['kind'], abs(delta) / 1e8, pct)
     h = ['<div style="margin:9px 0;padding:9px 11px;border-left:4px solid %s;'
          'background:%s;border-radius:4px">' % (col, bg)]
     h.append('<div style="font-size:15px;font-weight:700;color:%s">'
-             '%s %s %s(%s)</div>'
-             % (col, mark, esc(z['name']), esc(z['code']), ''))
+             '%s %s(%s)</div>'
+             % (col, mark, esc(z['name']), esc(z['code'])))
     h.append('<div style="font-size:12px;color:#b45309;margin:2px 0">'
              '★ %s</div>' % esc(z['who']))
     h.append('<div style="font-size:12px;color:#333;margin-top:3px">%s</div>'
              % esc(detail))
-    if z.get('ratio'):
+    if z.get('ratio') and z['kind'] != '退出':
         h.append('<div style="font-size:11px;color:#666">'
                  '占流通股 %.2f%% · 报告期 %s（对比 %s）</div>'
                  % (float(z['ratio']), esc(z['curDate']), esc(z['prevDate'])))
+    else:
+        h.append('<div style="font-size:11px;color:#666">'
+                 '报告期 %s（对比 %s）</div>'
+                 % (esc(z['curDate']), esc(z['prevDate'])))
     h.append('</div>')
     return ''.join(h)
 
@@ -632,7 +674,7 @@ def main():
     except Exception as e:
         print('季度持仓处理失败:', e)
     # 季度数据一次可能几十条，只推最重的前 8 条
-    holds.sort(key=lambda kv: -abs(kv[1]['num'] - kv[1]['oldNum']))
+    holds.sort(key=lambda kv: -abs((kv[1]['num'] or 0) - (kv[1]['oldNum'] or 0)))
     holds = holds[:8]
 
     # --- 香港金管局干预（每日）---
@@ -651,8 +693,10 @@ def main():
     print('增减持: 扫描 %d 条 -> 重量级 %d 条 -> 新增 %d 条（推送 %d 条）'
           % (len(rows), len(heavy), len(fresh), len(keep)))
     print('ETF: 异动 %d 个 -> 新增 %d 个' % (len(etf_delta()), len(etfs)))
-    print('汇金/社保持仓: 新增变化 %d 条' % len(holds))
-    print('香港金管局: 新增干预 %d 条' % len(hk))
+    print('汇金/社保持仓: %s' % (
+        ('新增变化 %d 条' % len(holds)) if holds else '无变动（不推送）'))
+    print('香港金管局: %s' % (
+        ('新增干预 %d 条' % len(hk)) if hk else '无变动（不推送）'))
 
     if not keep and not etfs and not holds and not hk:
         print('done: 无新增，不推送 cost=%.1fs' % (time.time() - t0))
