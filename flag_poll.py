@@ -38,6 +38,11 @@ except Exception:
 
 WXPUSH_API = 'https://wxpusher.zjiecode.com/api/send/message'
 STATE_FILE = 'flag_state.json'
+# ⚠️ 状态独立分支：main 被 poll.yml / probe.yml / watch.yml 用 git push 占着，
+#    再往 main 写必然撞车（2026-11-23 05:53 已把交易监控的 push 挤掉一次）。
+STATE_BRANCH = 'flag-state'
+# 当前角色：primary=主线（flag.yml）/ backup=备份线（flag_backup.yml）
+ROLE = os.environ.get('FLAG_ROLE', 'primary')
 
 # ---- 阈值 ----
 # 注意：CHANGE_RATE 是「变动股数占该股东原持股的比例」，300 条样本中位数就有 1.87%，
@@ -64,6 +69,11 @@ ALERT_GAP = 6 * 3600
 # 自动禁用」规则。我们的 commit 只在推送成功时产生，长期无事件就会静默停摆。
 # 故每 7 天强制回写一次状态文件，制造一次 commit。
 HEARTBEAT_DAYS = 7
+# 备份线判定「主线失联」的阈值：主线最近一次成功运行距今超过这么多分钟，就接管。
+# 主线 cron 是 7/27/47 分（20 分钟一轮），单轮约 25 秒，45 分钟 ≈ 连丢 2 轮。
+STALE_MIN = 45
+# 接管提示的最短间隔（秒），防止备份线每 10 分钟推一条
+TAKEOVER_NOTICE_GAP = 2 * 3600
 
 # 季度数据完整性告警收集（只进日志，不推送）
 INCOMPLETE = []
@@ -497,12 +507,42 @@ def fetch_hkma():
 # ============================================================
 #  四、状态去重
 # ============================================================
+# ⚠️ 状态必须存在独立分支，绝不能落 main。
+#    poll.yml / probe.yml / watch.yml 三个工作流都用 `git push` 写 main，
+#    之前 flag 的 Contents API 也写 main，实测 2026-11-23 05:53 直接把
+#    poll.yml 的 push 挤掉：`! [rejected] main -> main (fetch first)`，
+#    交易监控那次快照没提交成功。迁到 flag-state 分支后两边物理隔离。
+def fetch_state_from_branch():
+    """从 flag-state 分支读状态；读不到返回 None（与「空状态」区分开）"""
+    token = os.environ.get('GH_TOKEN', '').strip()
+    repo = os.environ.get('GH_REPO', '').strip()
+    if not token or not repo:
+        return None
+    api = ('https://api.github.com/repos/%s/contents/%s?ref=%s'
+           % (repo, STATE_FILE, STATE_BRANCH))
+    try:
+        d = get_json(api, headers={'Authorization': 'token ' + token,
+                                   'Accept': 'application/vnd.github+json'})
+        raw = base64.b64decode(d.get('content') or '')
+        return json.loads(raw.decode('utf-8'))
+    except Exception as e:
+        print('读 flag-state 分支状态失败:', str(e)[:80])
+        return None
+
+
 def load_state():
+    # 1) 本地文件（本地调试用；Actions checkout 的是 main，正常情况下没有）
     try:
         with open(STATE_FILE, encoding='utf-8') as f:
             return json.load(f)
     except Exception:
-        return {'pushed': {}, 'etf': {}}
+        pass
+    # 2) 独立分支
+    st = fetch_state_from_branch()
+    if isinstance(st, dict):
+        return st
+    print('无历史状态，按全新开始（首轮会把存量都推一遍）')
+    return {'pushed': {}, 'etf': {}}
 
 
 def save_state(st):
@@ -514,7 +554,11 @@ def save_state(st):
 
 
 def push_state_to_repo():
-    """把状态文件写回仓库（用 Contents API，避免 git 半截文件）"""
+    """把状态文件写回 flag-state 分支（Contents API，避免 git 半截文件）
+
+    409 说明有另一条线刚写过，重新取 sha 再试。写失败只影响去重、
+    不影响已发出的推送，所以不抛异常。
+    """
     token = os.environ.get('GH_TOKEN', '').strip()
     repo = os.environ.get('GH_REPO', '').strip()
     if not token or not repo:
@@ -522,29 +566,42 @@ def push_state_to_repo():
         return
     try:
         content = open(STATE_FILE, 'rb').read()
-        b64 = base64.b64encode(content).decode()
-        api = 'https://api.github.com/repos/%s/contents/%s' % (repo, STATE_FILE)
+    except Exception as e:
+        print('状态文件读不到，跳过回写:', e)
+        return
+    b64 = base64.b64encode(content).decode()
+    api = 'https://api.github.com/repos/%s/contents/%s' % (repo, STATE_FILE)
+    hdr = {'Authorization': 'token ' + token,
+           'Accept': 'application/vnd.github+json'}
+    for attempt in range(3):
         sha = None
         try:
-            d = get_json(api, headers={'Authorization': 'token ' + token,
-                                       'Accept': 'application/vnd.github+json'})
+            d = get_json(api + '?ref=' + STATE_BRANCH, headers=hdr)
             sha = d.get('sha')
         except Exception:
             pass
-        payload = {'message': 'chore: update flag_state %s' %
-                              time.strftime('%Y-%m-%d %H:%M'),
-                   'content': b64, 'branch': 'main'}
+        payload = {'message': 'chore: flag_state %s [%s]' % (
+                       time.strftime('%Y-%m-%d %H:%M'), ROLE),
+                   'content': b64, 'branch': STATE_BRANCH}
         if sha:
             payload['sha'] = sha
         req = urllib.request.Request(
             api, data=json.dumps(payload).encode(), method='PUT',
-            headers={'Authorization': 'token ' + token,
-                     'Accept': 'application/vnd.github+json',
-                     'Content-Type': 'application/json'})
-        with urllib.request.urlopen(req, timeout=30, context=CTX) as r:
-            print('状态已回写仓库:', r.status)
-    except Exception as e:
-        print('状态回写失败（不影响推送）:', e)
+            headers=dict(hdr, **{'Content-Type': 'application/json'}))
+        try:
+            with urllib.request.urlopen(req, timeout=30, context=CTX) as r:
+                print('状态已回写 flag-state 分支:', r.status)
+                return
+        except urllib.error.HTTPError as e:
+            if e.code == 409 and attempt < 2:
+                print('状态回写 409（另一条线刚写过），重试 %d' % (attempt + 1))
+                time.sleep(2)
+                continue
+            print('状态回写失败（不影响推送）: HTTP', e.code)
+            return
+        except Exception as e:
+            print('状态回写失败（不影响推送）:', str(e)[:80])
+            return
 
 
 # ============================================================
@@ -807,7 +864,24 @@ def main():
     if bad:
         print('[告警] 数据源连续失败:', [(b[0], b[1]) for b in bad])
 
-    if not keep and not etfs and not holds and not hk and not bad:
+    # --- 备份线接管提示 ---
+    # 只在 ROLE=backup（flag_backup.yml）时出现。主线恢复后自动消失，
+    # 同一轮接管最多每 2 小时提示一次，避免每 10 分钟刷一条。
+    banner = ''
+    takeover = False
+    if ROLE == 'backup':
+        if now - int(st.get('lastTakeover') or 0) > TAKEOVER_NOTICE_GAP:
+            banner = ('<div style="padding:8px 11px;background:#fef3c7;'
+                      'border-left:4px solid #f59e0b;border-radius:4px;'
+                      'margin:6px 0;font-size:13px">'
+                      '<b>⚠️ 主线失联，备份线已接管</b><br>'
+                      '<span style="color:#666">主线 flag.yml 超过 %d 分钟没有成功运行，'
+                      '本条由备份线发出。主线恢复后自动交还。</span></div>'
+                      % STALE_MIN)
+            takeover = True
+        print('角色=备份线，接管=%s' % takeover)
+
+    if not keep and not etfs and not holds and not hk and not bad and not takeover:
         print('done: 无新增，不推送 cost=%.1fs' % (time.time() - t0))
         save_state(st)
         # 心跳：GitHub 对 public repo 有「60 天无 commit 自动禁用 schedule」规则，
@@ -824,6 +898,8 @@ def main():
     # 顺序：数据源异常（最重要，说明后面几条可能是瞎的）> 香港金管局
     #       > 国家队 ETF > 汇金/社保季度 > 个股增减持
     parts = []
+    if banner:
+        parts.append(banner)
     if bad:
         rows_html = []
         for label, streak, lastOk, _src in bad:
@@ -898,6 +974,8 @@ def main():
         # 告警推送成功后记录时间，6 小时内不再重复告警
         for _label, _streak, _lastOk, src in bad:
             health.setdefault(src, {})['lastAlert'] = now
+        if takeover:
+            st['lastTakeover'] = now
         # 状态瘦身：只保留 30 天
         cut = now - 30 * 86400
         st['pushed'] = {k: v for k, v in pushed.items() if v > cut}
