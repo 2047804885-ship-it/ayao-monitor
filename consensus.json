@@ -1,6 +1,6 @@
 {
- "time": "2026-11-23 17:35:22 北京时间",
- "ts": 1795426522,
+ "time": "2026-11-23 17:41:07 北京时间",
+ "ts": 1795426867,
  "scanned": 22,
  "ok": 22,
  "hitCount": 0,
@@ -9,5 +9,5 @@
  "source": "gateio",
  "engine": "TA-7layer-rightside",
  "signals": [],
- "cost": 66.0
+ "cost": 45.2
 }
