@@ -44,7 +44,12 @@ HEAVY = {'BTC_USDT', 'ETH_USDT', 'SOL_USDT'}
 
 STATE_FILE = 'market_state.json'
 DEDUP_HOURS = 6
-MAX_PUSH = 4
+# ⚠️ 这里原来是「单次最多推几条」，超出的直接扔掉——那是丢包。
+#    现在改成「每条微信消息最多放几条」，超了就拆下一条继续发，一条都不丢。
+ITEMS_PER_MSG = 4
+CHAR_BUDGET = 11000       # 单条消息字符预算（WxPusher content 上限约 20K）
+# 数据源全挂的判定阈值：取数成功的币少于这个比例，就推「监控异常」而不是静默
+HEALTH_MIN_RATIO = 0.3
 
 # ---- 组合层面刹车：防止"七个币全看空"被误读成七重确认 ----
 # 单边行情下所有币同涨同跌，同向信号越多，越可能只是在押同一个宏观方向。
@@ -448,7 +453,8 @@ def brake(signals):
         keep_coins.add(s['coin'])
 
     dropped = [s for s in group if s['coin'] not in keep_coins]
-    kept = keep[:MAX_PUSH]
+    # keep 上面已经被 CORR_KEEP 限住，原来的 keep[:MAX_PUSH] 是空操作，去掉
+    kept = keep
 
     info = {
         'side': side,
@@ -483,46 +489,109 @@ def fmt_brake(info):
 
 
 def wxpush(signals, brake_info=None):
+    """分批推送，返回 (状态, 真正发出去的信号列表)
+
+    ⚠️ 返回 sent 而不是只返回 ok：调用方必须只把「确实发出去」的信号写进去重状态，
+    否则某条消息失败时，里面的信号会被误标成已推，永久丢失。
+    """
     token = os.environ.get('WXPUSHER_TOKEN', '').strip()
     uid = os.environ.get('WXPUSHER_UID', '').strip()
     if not token or not uid:
-        return 'skipped (no WXPUSHER_TOKEN/WXPUSHER_UID)'
+        return 'skipped (no WXPUSHER_TOKEN/WXPUSHER_UID)', []
     if not signals:
-        return 'nothing to push'
+        return 'nothing to push', []
 
-    body = fmt_brake(brake_info) + ''.join(fmt_signal(s) for s in signals)
-    hd = signals[0]
-    if brake_info:
-        summary = '⚠️组合刹车 %d个%s信号→只推%d个 · 首位 %s %s' % (
-            brake_info['total'], '看多' if brake_info['side'] == 'LONG' else '看空',
-            len(brake_info['kept']), cn(hd['coin']),
-            '看多' if hd['side'] == 'LONG' else '看空')
-    else:
-        summary = '%s %s · 置信度 %d · 共 %d 条' % (
-            cn(hd['coin']), '看多' if hd['side'] == 'LONG' else '看空',
-            hd['confidence'], len(signals))
+    # 先把卡片都渲染好，再按「条数 + 字符」打包，避免 fmt_signal 重复调用
+    cards = [(fmt_signal(s), s) for s in signals]
+    chunks = []
+    cur = []
+    clen = 0
+    for h, s in cards:
+        if cur and (clen + len(h) > CHAR_BUDGET or len(cur) >= ITEMS_PER_MSG):
+            chunks.append(cur)
+            cur, clen = [], 0
+        cur.append((h, s))
+        clen += len(h)
+    if cur:
+        chunks.append(cur)
+
+    total = len(chunks)
+    sent = []
+    last = 'ok'
+    for i, ch in enumerate(chunks, 1):
+        body = ''.join(h for h, _ in ch)
+        if i == 1 and brake_info:
+            body = fmt_brake(brake_info) + body
+        hd = ch[0][1]
+        side_cn = '看多' if hd['side'] == 'LONG' else '看空'
+        if brake_info:
+            summary = '⚠️组合刹车 %d个%s信号→只推%d个 · 首位 %s %s' % (
+                brake_info['total'],
+                '看多' if brake_info['side'] == 'LONG' else '看空',
+                len(brake_info['kept']), cn(hd['coin']), side_cn)
+        else:
+            summary = '%s %s · 置信度 %d · 共 %d 条' % (
+                cn(hd['coin']), side_cn, hd['confidence'], len(signals))
+        if total > 1:
+            summary = '%s · 第%d/%d条' % (summary, i, total)
+
+        title = '📡 熬鹰 · 主流币信号'
+        if total > 1:
+            title += '（%d/%d）' % (i, total)
+        payload = {
+            'appToken': token,
+            'content': '<h3>%s</h3>' % title + body +
+                       "<p style='color:#999;font-size:11px'>七层技术分析+聪明钱投票 · "
+                       "监控 %d 个主流币 · %s 北京时间<br>仅供参考，不构成投资建议</p>"
+                       % (len(MAJORS), time.strftime('%m-%d %H:%M',
+                                                     time.localtime(time.time() + 8 * 3600))),
+            'summary': summary[:95],
+            'contentType': 3,
+            'uids': [uid],
+            'url': 'https://2047804885-ship-it.github.io/ayao-monitor/market.html',
+        }
+        req = urllib.request.Request(WXPUSH_API, data=json.dumps(payload).encode(),
+                                     headers={'Content-Type': 'application/json'})
+        try:
+            resp = json.loads(urllib.request.urlopen(req, timeout=15, context=CTX)
+                              .read().decode())
+            ok = resp.get('code') == 1000
+            print('wxpush %d/%d: %s %s' % (i, total, resp.get('code'), resp.get('msg')))
+            if ok:
+                sent.extend(s for _, s in ch)
+            else:
+                last = 'fail:' + str(resp.get('msg'))
+        except Exception as e:
+            print('wxpush error %d/%d: %s' % (i, total, e))
+            last = 'err:' + str(e)[:80]
+    return last, sent
+
+
+def alert_push(title, html, summary):
+    """纯告警推送（不走信号格式），失败只记日志不抛异常"""
+    token = os.environ.get('WXPUSHER_TOKEN', '').strip()
+    uid = os.environ.get('WXPUSHER_UID', '').strip()
+    if not token or not uid:
+        return 'skipped'
     payload = {
         'appToken': token,
-        'content': "<h3>📡 熬鹰 · 主流币信号</h3>" + body +
-                   "<p style='color:#999;font-size:11px'>三层技术分析+聪明钱投票 · "
-                   "监控 %d 个主流币 · %s 北京时间<br>仅供参考，不构成投资建议</p>"
-                   % (len(MAJORS), time.strftime('%m-%d %H:%M',
-                                                 time.localtime(time.time() + 8 * 3600))),
+        'content': '<h3>%s</h3>%s' % (title, html),
         'summary': summary[:95],
         'contentType': 3,
         'uids': [uid],
         'url': 'https://2047804885-ship-it.github.io/ayao-monitor/market.html',
     }
     req = urllib.request.Request(WXPUSH_API, data=json.dumps(payload).encode(),
-                                headers={'Content-Type': 'application/json'})
+                                 headers={'Content-Type': 'application/json'})
     try:
-        resp = json.loads(urllib.request.urlopen(req, timeout=15, context=CTX).read().decode())
+        resp = json.loads(urllib.request.urlopen(req, timeout=15, context=CTX)
+                          .read().decode())
         ok = resp.get('code') == 1000
-        print('wxpush:', resp.get('code'), resp.get('msg'))
-        return 'ok' if ok else 'fail:' + str(resp.get('msg'))
+        print('alert:', resp.get('code'), resp.get('msg'))
+        return 'ok' if ok else 'fail'
     except Exception as e:
-        print('wxpush error:', e)
-        return 'err:' + str(e)[:80]
+        print('alert error:', e)
+        return 'err'
 
 
 def main():
@@ -561,7 +630,10 @@ def main():
         print('组合刹车: %s 信号 %d 个 -> 保留 %d 个，压制 %s'
               % (brake_info['side'], brake_info['total'],
                  len(brake_info['kept']), ','.join(brake_info['dropped'])))
-    signals = signals[:MAX_PUSH]
+    # ⚠️ 原来这里有一句 signals = signals[:MAX_PUSH]，直接把超出的信号扔掉。
+    #    更糟的是：被扔掉的信号不会写进去重状态，而下一轮排序不变、还是取前 4 个，
+    #    所以第 5 条往后**永远轮不到**，等于永久丢失。现在全部保留，
+    #    超长由 wxpush 拆多条消息发完。
 
     out = {
         'time': time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() + 8 * 3600)) + ' 北京时间',
@@ -589,17 +661,40 @@ def main():
         # 刹车提示只列本次真正推出的币，避免"保留但已推送过"的对不上
         bi = None
         if brake_info:
-            fset = set(s['coin'] for s in fresh)
             bi = dict(brake_info)
             bi['kept'] = [c for c in brake_info['kept']
                           if any(cn(s['coin']) == c for s in fresh)]
             if not bi['kept']:
                 bi = None
-        res = wxpush(fresh, brake_info=bi)
-        if res == 'ok':
-            for s in fresh:
+        res, sent = wxpush(fresh, brake_info=bi)
+        # ⚠️ 只标记确实发出去的。分批推送时某条失败，里面的信号不能标已推，
+        #    否则下一轮会被去重挡掉 → 永久丢失。
+        if sent:
+            for s in sent:
                 state[s['coin'] + '|' + s['side']] = now_ts
             save_state(state)
+            if len(sent) < len(fresh):
+                print('部分发送成功 %d/%d，其余下轮重试' % (len(sent), len(fresh)))
+
+    # 4) 数据源健康检查
+    # 全挂时 okn=0、signals 为空，日志和「真的没信号」一模一样，用户完全看不出来。
+    # 这里在取数成功率过低时主动推一条告警（6 小时最多一次，防刷屏）。
+    if len(MAJORS) and okn < len(MAJORS) * HEALTH_MIN_RATIO:
+        last = state.get('_healthAlertTs', 0)
+        if now_ts - last > 6 * 3600:
+            html = ('<div style="padding:8px 11px;background:#fff7ed;'
+                    'border-left:4px solid #f59e0b;border-radius:4px;font-size:13px">'
+                    '<b>取数失败 %d/%d 个币</b><br>'
+                    '<span style="color:#666">Gate.io 接口异常或本机网络问题，'
+                    '本轮「没有信号」不代表行情平静，是监控看不见。</span></div>'
+                    % (len(MAJORS) - okn, len(MAJORS)))
+            if alert_push('⚠️ 熬鹰监控数据源异常', html,
+                          '⚠️ %d/%d 个币取数失败' % (len(MAJORS) - okn, len(MAJORS))) == 'ok':
+                state['_healthAlertTs'] = now_ts
+                save_state(state)
+                print('已推送数据源异常告警')
+        else:
+            print('数据源异常但 6 小时内已告警过，不重复推送')
 
     print('done: coins=%d ok=%d hit=%d/%d fresh=%d cost=%.1fs push=%s'
           % (len(MAJORS), okn, len(signals), raw_n, len(fresh), time.time() - t0, res))
