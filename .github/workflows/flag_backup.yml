@@ -1,0 +1,43 @@
+name: 风向标备份线（主线失联时接管）
+
+# 这条线存在的唯一目的：主线 flag.yml 被 GitHub 跳过或连续失败时，
+# 由它接管，保证「风向标异动」不会因为调度问题静默漏掉。
+#
+# 与主线、与熬鹰交易监控（poll.yml / watch.yml）完全独立：
+#   - 独立 cron（17/37/57 分），与主线 7/27/47 错开
+#   - 独立 concurrency group（flag-backup），不与任何工作流排队互锁
+#   - 不写 main 分支（状态走 flag-state 分支），不会挤掉 poll.yml 的 git push
+#   - 主线正常时只查一次 Actions 接口就退出，不抓数据、不推送
+
+on:
+  schedule:
+    - cron: '17,37,57 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: flag-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: write     # 接管时需要回写 flag-state 分支
+  actions: read       # 需要查 flag.yml 的运行记录判断主线死活
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 检查主线并（必要时）接管
+        env:
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          FLAG_ROLE: backup
+        run: python flag_watchdog.py
