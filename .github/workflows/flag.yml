@@ -2,8 +2,10 @@ name: 风向标监控（增减持 / 国家队 ETF）
 
 on:
   schedule:
-    # 每 20 分钟扫一次（UTC）。A 股公告集中在盘后 15:00-20:00，其余时段零星
-    - cron: '*/20 * * * *'
+    # ⚠️ 故意错开 :00 / :20 / :40 —— GitHub 的 cron 在整点和半点最拥堵，
+    # 官方明确说明高负载时任务会延迟甚至被整次跳过。用 7/27/47 分能明显降低丢跑概率。
+    # （UTC 时间；A 股公告集中在盘后 15:00-20:00，即 UTC 07:00-12:00）
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:
 
 # 防止并发写状态文件冲突
@@ -31,4 +33,12 @@ jobs:
           WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: python flag_poll.py
+        # 脚本内部已按模块容错，这里再加一层：网络抖动导致的整体失败重试 2 次
+        run: |
+          for i in 1 2 3; do
+            python flag_poll.py && exit 0
+            echo "第 $i 次运行失败，30 秒后重试"
+            sleep 30
+          done
+          echo "三次均失败"
+          exit 1
