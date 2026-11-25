@@ -1,0 +1,24 @@
+name: Test Push (main line)
+
+# 主线路纯测试推送：不判断信号，直接调 WxPusher 推一条固定测试消息
+# 用于「掉线约等于零」验收 —— 人工触发，验证 GitHub 渠道推送链路
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test push
+        env:
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+        run: python test_push.py
