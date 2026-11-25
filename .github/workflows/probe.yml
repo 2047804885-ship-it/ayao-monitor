@@ -24,12 +24,14 @@ jobs:
           git add probe_out.json
           git diff --cached --quiet && echo "no change" && exit 0
           git commit -m "probe $(date -u +%FT%TZ)"
-          # ⚠️ poll.yml 每 5~10 分钟就往 main 推一次，撞上就是
-          #    `! [rejected] main -> main (fetch first)`。rebase 后重试。
+          # ⚠️ poll.yml 也往 main 推，撞上就是
+          #    `! [rejected] main -> main (fetch first)`。
+          #    用 rebase -X ours：冲突时自动保留本轮新数据，不卡在 unmerged files。
           for i in 1 2 3; do
             if git push; then echo "push ok"; exit 0; fi
-            echo "push 被拒（第 $i 次），rebase 后重试"
-            git pull --rebase --autostash origin main || true
+            echo "push 被拒（第 $i 次），rebase -X ours 后重试"
+            git rebase --abort 2>/dev/null || true
+            git pull --rebase -X ours origin main || true
             sleep 3
           done
           echo "::error::push 连续 3 次失败"
