@@ -56,13 +56,16 @@ jobs:
           if [ -f market_state.json ]; then git add market_state.json; fi
           git diff --cached --quiet && echo "no change" && exit 0
           git commit -m "snapshot $(date -u +%FT%TZ)"
-          # ⚠️ probe.yml 也在往 main 推，撞上就是
-          #    `! [rejected] main -> main (fetch first)`，之前直接失败过。
-          #    rebase 后重试，最多 3 次。
+          # ⚠️ poll/probe/watch 可能同时往 main 推，撞上就是
+          #    `! [rejected] main -> main (fetch first)`。
+          #    用 rebase -X ours：冲突时自动保留本轮新数据，不卡在 unmerged files。
+          #    （旧写法 git pull --rebase --autostash 遇真冲突会卡死：detached HEAD
+          #      + unmerged files，后续重试全失败。）
           for i in 1 2 3; do
             if git push; then echo "push ok"; exit 0; fi
-            echo "push 被拒（第 $i 次），rebase 后重试"
-            git pull --rebase --autostash origin main || true
+            echo "push 被拒（第 $i 次），rebase -X ours 后重试"
+            git rebase --abort 2>/dev/null || true
+            git pull --rebase -X ours origin main || true
             sleep 3
           done
           echo "::error::push 连续 3 次失败，本轮快照未提交（下一轮会重新生成）"
