@@ -5,6 +5,12 @@ name: Watchdog
 #    这个看门狗负责「发现 watch 挂了就重新拉起」。
 #    watch 本身断线时推送延迟从 20 分钟变 30 分钟，可接受；
 #    换来的是账户触发量减少三分之一。
+#
+# ⚠️ 扩展（2026-11-27）：同时守护 poll（交易动态 + 信号雷达）。
+#    之前 poll 只有 schedule（GitHub 免费版实测延迟到 1 小时）
+#    + 本机 notifier 催更（依赖电脑，网络一断就没了），
+#    等于没有云端备份。现在由看门狗每 30 分钟检查一次：
+#    最近 40 分钟没有 success 且当前无在跑/排队的 poll → 主动 dispatch。
 # ============================================================
 
 on:
@@ -25,12 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ensure a watcher is alive
+      - name: Ensure watcher alive + poll fresh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python - <<'PY'
-          import os, json, urllib.request
+          import os, json, urllib.request, time
+          from datetime import datetime
 
           tok = os.environ.get('GH_TOKEN', '')
           repo = os.environ.get('GITHUB_REPOSITORY', '')
@@ -43,24 +50,54 @@ jobs:
               with urllib.request.urlopen(req, timeout=20) as r:
                   return json.loads(r.read().decode())
 
+          def dispatch(wf, body=None):
+              data = json.dumps(body or {'ref': 'main'}).encode()
+              req = urllib.request.Request(
+                  'https://api.github.com/repos/%s/actions/workflows/%s/dispatches' % (repo, wf),
+                  data=data, method='POST',
+                  headers=dict(H, **{'Content-Type': 'application/json'}))
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  print('  dispatched %s: HTTP %s' % (wf, r.status))
+
+          # ---------- 1) watch 守护（原有逻辑）----------
           runs = get('actions/runs?status=in_progress&per_page=50').get('workflow_runs', [])
           alive = [r for r in runs if r.get('name', '').startswith('Ayao Watch')]
           if alive:
               print('watcher alive:', alive[0]['id'], alive[0].get('created_at'))
-              raise SystemExit(0)
+          else:
+              pend = get('actions/runs?status=pending&per_page=50').get('workflow_runs', [])
+              queued = [r for r in pend if r.get('name', '').startswith('Ayao Watch')]
+              if queued:
+                  print('watcher queued, wait:', queued[0]['id'])
+              else:
+                  print('NO watcher running -> dispatching one')
+                  dispatch('watch.yml', {'ref': 'main', 'inputs': {'mode': 'watch'}})
 
-          pend = get('actions/runs?status=pending&per_page=50').get('workflow_runs', [])
-          queued = [r for r in pend if r.get('name', '').startswith('Ayao Watch')]
-          if queued:
-              print('watcher queued, wait:', queued[0]['id'])
-              raise SystemExit(0)
-
-          print('NO watcher running -> dispatching one')
-          body = json.dumps({'ref': 'main', 'inputs': {'mode': 'watch'}}).encode()
-          req = urllib.request.Request(
-              'https://api.github.com/repos/%s/actions/workflows/watch.yml/dispatches' % repo,
-              data=body, method='POST',
-              headers=dict(H, **{'Content-Type': 'application/json'}))
-          with urllib.request.urlopen(req, timeout=20) as r:
-              print('dispatched:', r.status)
+          # ---------- 2) poll 守护（新增）----------
+          pruns = get('actions/workflows/poll.yml/runs?per_page=8').get('workflow_runs', [])
+          active = [r for r in pruns if r.get('status') in ('in_progress', 'queued', 'pending', 'waiting')]
+          if active:
+              print('poll active:', active[0]['status'], active[0]['created_at'])
+          else:
+              now = time.time()
+              last_ok = None
+              for r in pruns:
+                  if r.get('conclusion') == 'success':
+                      t = (r.get('updated_at') or r.get('created_at') or '').replace('Z', '+00:00')
+                      try:
+                          ts = datetime.fromisoformat(t).timestamp()
+                      except Exception:
+                          continue
+                      if last_ok is None or ts > last_ok:
+                          last_ok = ts
+              if last_ok is None:
+                  print('poll: no success found -> dispatch')
+                  dispatch('poll.yml')
+              else:
+                  age = (now - last_ok) / 60
+                  if age > 40:
+                      print('poll stale: last success %.0f min ago (>40) -> dispatch' % age)
+                      dispatch('poll.yml')
+                  else:
+                      print('poll ok: last success %.0f min ago' % age)
           PY
