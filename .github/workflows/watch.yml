@@ -9,7 +9,7 @@ on:
         default: 'watch'
   schedule:
     # 兜底：万一长驻链路断了，每 30 分钟自动补一次
-    - cron: '*/30 * * * *'
+    - cron: '0 3 * * *'   # 兜底每天1次；实时接力靠 watch.py redispatch + healthcheck 每30分钟主动补
 
 permissions:
   contents: write
