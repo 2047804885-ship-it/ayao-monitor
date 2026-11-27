@@ -1043,11 +1043,16 @@ def main():
     elif holds:
         h0 = holds[0][1]
         summary = '🏦 %s %s %s' % (h0['who'], h0['kind'], h0['name'])
-    else:
+    elif keep:
         top = keep[0]
         summary = '%s %s %s · 约%s' % (top['dir'], top['name'],
                                        '★风向标' if top['flag'] else '',
                                        yi(top['amount']))
+    else:
+        # ⚠️ 备份线接管（takeover=True）但本轮无任何新增信号时，
+        #    keep 为空，旧写法 top = keep[0] 会 IndexError 直接崩溃
+        #    （2026-11-26 17:43 已实际触发过一次）。给兜底摘要。
+        summary = '⚠️ 主线失联，备份线已接管（本轮无新增异动）'
     if holds and not hk and not bad:
         summary += ' | 持仓变动%d条' % len(holds)
 
