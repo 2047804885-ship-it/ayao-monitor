@@ -1,16 +1,17 @@
 name: Watchdog
 
 # ============================================================
-# ⚠️ 降频（2026-11-25）：'*/20 * * * *' → '*/30 * * * *'
-#    这个看门狗负责「发现 watch 挂了就重新拉起」。
-#    watch 本身断线时推送延迟从 20 分钟变 30 分钟，可接受；
-#    换来的是账户触发量减少三分之一。
+# 看门狗：每 30 分钟检查三条线的"活着"状态，发现断档就主动补拉。
 #
-# ⚠️ 扩展（2026-11-27）：同时守护 poll（交易动态 + 信号雷达）。
-#    之前 poll 只有 schedule（GitHub 免费版实测延迟到 1 小时）
-#    + 本机 notifier 催更（依赖电脑，网络一断就没了），
-#    等于没有云端备份。现在由看门狗每 30 分钟检查一次：
-#    最近 40 分钟没有 success 且当前无在跑/排队的 poll → 主动 dispatch。
+# 历史：
+#   2026-11-25  '*/20' → '*/30'（降频，减少账户触发量）
+#   2026-11-27  扩展守护 poll（交易动态+信号雷达，原来只有 schedule+本机催更）
+#   2026-11-27  扩展守护 flag（风向标主线实测会被 GitHub 跳过，04:29→06:21 空窗 111 分钟）
+#
+# 三个守护的判据：
+#   watch  最近没有 in_progress/pending 的 watch run        → dispatch watch
+#   poll   最近 40 分钟无 success 且无在跑/排队              → dispatch poll
+#   flag   最近 90 分钟无 success 且无在跑/排队              → dispatch flag
 # ============================================================
 
 on:
@@ -31,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ensure watcher alive + poll fresh
+      - name: Ensure watch / poll / flag alive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -59,29 +60,10 @@ jobs:
               with urllib.request.urlopen(req, timeout=20) as r:
                   print('  dispatched %s: HTTP %s' % (wf, r.status))
 
-          # ---------- 1) watch 守护（原有逻辑）----------
-          runs = get('actions/runs?status=in_progress&per_page=50').get('workflow_runs', [])
-          alive = [r for r in runs if r.get('name', '').startswith('Ayao Watch')]
-          if alive:
-              print('watcher alive:', alive[0]['id'], alive[0].get('created_at'))
-          else:
-              pend = get('actions/runs?status=pending&per_page=50').get('workflow_runs', [])
-              queued = [r for r in pend if r.get('name', '').startswith('Ayao Watch')]
-              if queued:
-                  print('watcher queued, wait:', queued[0]['id'])
-              else:
-                  print('NO watcher running -> dispatching one')
-                  dispatch('watch.yml', {'ref': 'main', 'inputs': {'mode': 'watch'}})
-
-          # ---------- 2) poll 守护（新增）----------
-          pruns = get('actions/workflows/poll.yml/runs?per_page=8').get('workflow_runs', [])
-          active = [r for r in pruns if r.get('status') in ('in_progress', 'queued', 'pending', 'waiting')]
-          if active:
-              print('poll active:', active[0]['status'], active[0]['created_at'])
-          else:
+          def last_success_age_min(runs):
               now = time.time()
               last_ok = None
-              for r in pruns:
+              for r in runs:
                   if r.get('conclusion') == 'success':
                       t = (r.get('updated_at') or r.get('created_at') or '').replace('Z', '+00:00')
                       try:
@@ -90,14 +72,52 @@ jobs:
                           continue
                       if last_ok is None or ts > last_ok:
                           last_ok = ts
-              if last_ok is None:
-                  print('poll: no success found -> dispatch')
+              return None if last_ok is None else (now - last_ok) / 60
+
+          def has_active(runs):
+              return [r for r in runs if r.get('status') in ('in_progress', 'queued', 'pending', 'waiting')]
+
+          # ---------- 1) watch 守护 ----------
+          runs = get('actions/runs?status=in_progress&per_page=50').get('workflow_runs', [])
+          alive = [r for r in runs if r.get('name', '').startswith('Ayao Watch')]
+          if alive:
+              print('watcher alive:', alive[0]['id'])
+          else:
+              pend = get('actions/runs?status=pending&per_page=50').get('workflow_runs', [])
+              queued = [r for r in pend if r.get('name', '').startswith('Ayao Watch')]
+              if queued:
+                  print('watcher queued, wait:', queued[0]['id'])
+              else:
+                  print('NO watcher -> dispatch watch')
+                  dispatch('watch.yml', {'ref': 'main', 'inputs': {'mode': 'watch'}})
+
+          # ---------- 2) poll 守护 ----------
+          pruns = get('actions/workflows/poll.yml/runs?per_page=8').get('workflow_runs', [])
+          if has_active(pruns):
+              print('poll active:', has_active(pruns)[0]['status'])
+          else:
+              age = last_success_age_min(pruns)
+              if age is None:
+                  print('poll: no success -> dispatch')
+                  dispatch('poll.yml')
+              elif age > 40:
+                  print('poll stale %.0f min -> dispatch' % age)
                   dispatch('poll.yml')
               else:
-                  age = (now - last_ok) / 60
-                  if age > 40:
-                      print('poll stale: last success %.0f min ago (>40) -> dispatch' % age)
-                      dispatch('poll.yml')
-                  else:
-                      print('poll ok: last success %.0f min ago' % age)
+                  print('poll ok: %.0f min ago' % age)
+
+          # ---------- 3) flag 守护 ----------
+          fruns = get('actions/workflows/flag.yml/runs?per_page=8').get('workflow_runs', [])
+          if has_active(fruns):
+              print('flag active:', has_active(fruns)[0]['status'])
+          else:
+              age = last_success_age_min(fruns)
+              if age is None:
+                  print('flag: no success -> dispatch')
+                  dispatch('flag.yml')
+              elif age > 90:
+                  print('flag stale %.0f min -> dispatch' % age)
+                  dispatch('flag.yml')
+              else:
+                  print('flag ok: %.0f min ago' % age)
           PY
