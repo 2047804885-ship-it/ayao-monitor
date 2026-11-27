@@ -17,7 +17,7 @@ name: 风向标备份线（主线失联时接管）
 
 on:
   schedule:
-    - cron: '53 */2 * * *'
+    - cron: '53 * * * *'
   workflow_dispatch:
 
 concurrency:
